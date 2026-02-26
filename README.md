@@ -215,31 +215,6 @@ The project uses the **Cairo** font for optimal Arabic language support.
 
 ---
 
-## 🐛 Troubleshooting
-
-### 1. Port Already in Use
-
-```bash
-# Find the process and kill it
-netstat -ano | grep :4000
-taskkill //F //PID <process_id>
-```
-
-### 2. Database Connection Error
-- Ensure PostgreSQL is running
-- Verify credentials in `.env` file
-
-### 3. Build Issues
-
-```bash
-# Clear cache and rebuild
-rm -rf node_modules dist
-npm install
-npm run build
-```
-
----
-
 ## 📄 API Endpoints
 
 ### Authentication
@@ -296,18 +271,6 @@ npm run build
 - JWT tokens for authentication
 - CSRF protection
 - SQL Injection protection (Sequelize ORM)
-
----
-
-## 📝 License
-
-This project is licensed under the **ISC** License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 👨‍💻 Developers
-
-**Developed with ❤️ by MyDoctor Team**
 
 ---
 

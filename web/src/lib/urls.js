@@ -4,3 +4,9 @@ export const PROFILE_URL = "/account/profile";
 export const DELETE_PROFILE_URL = "/account/delete-profile";
 export const DOCTORS_URL = "/doctors";
 export const UPDATE_PROFILE_URL = "/account/update-profile";
+export const APPOINTMENTS_URL = "/appointments";
+
+export const doctorDetailsUrl = (doctorId) => `${DOCTORS_URL}/${doctorId}`;
+export const doctorAvailabilityUrl = (doctorId) => `${doctorDetailsUrl(doctorId)}/availability`;
+export const appointmentCancelUrl = (appointmentId) => `${APPOINTMENTS_URL}/${appointmentId}/cancel`;
+export const appointmentStatusUrl = (appointmentId) => `${APPOINTMENTS_URL}/${appointmentId}/status`;

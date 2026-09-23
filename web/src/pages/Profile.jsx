@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "../lib/axios";
 import { PROFILE_URL, DELETE_PROFILE_URL } from "../lib/urls";
 import { transformName } from "../lib/helpers";
@@ -8,19 +8,26 @@ import Loader from "../components/Loader";
 import Alert from "../components/Alert";
 import { LogOut, Edit, Trash2, MapPin, Phone, Clock, Stethoscope, User } from "lucide-react";
 
+const InfoRow = ({ icon, label, value }) => (
+  <div className="flex items-start gap-4 border-b border-mist py-4 last:border-0">
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-mist text-brand-deep">
+      {React.createElement(icon, { className: "h-6 w-6" })}
+    </div>
+    <div className="flex-1 text-right">
+      <p className="text-sm font-medium text-brand/70">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-brand-deep">{value || "-"}</p>
+    </div>
+  </div>
+);
+
 const Profile = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [alert, setAlert] = useState({ visible: false, title: "", message: "", type: "" });
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    setLoading(true);
+  const fetchProfile = useCallback(async () => {
     try {
       const response = await axios.get(PROFILE_URL);
       setUser(response.data);
@@ -29,7 +36,13 @@ const Profile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // The request owns the loading/profile state for this screen.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetch
+    fetchProfile();
+  }, [fetchProfile]);
 
   const showAlert = (title, message, type) => {
     setAlert({ visible: true, title, message, type });
@@ -79,20 +92,8 @@ const Profile = () => {
     return <Loader loading={loading} title="جاري تحميل الملف الشخصي" />;
   }
 
-  const InfoRow = ({ icon: Icon, label, value }) => (
-    <div className="flex items-start gap-4 border-b border-gray-100 py-4 last:border-0">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-600">
-        <Icon className="h-6 w-6" />
-      </div>
-      <div className="flex-1 text-right">
-        <p className="text-sm font-medium text-gray-500">{label}</p>
-        <p className="mt-1 text-lg font-semibold text-gray-900">{value || "-"}</p>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pt-16">
+    <div className="min-h-screen bg-cream pt-16">
       <Alert
         visible={alert.visible}
         title={alert.title}
@@ -107,17 +108,17 @@ const Profile = () => {
         <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
           {/* Page Title */}
           <div className="text-center mb-8">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand text-brand-deep shadow-lg">
               <User className="h-8 w-8" />
             </div>
-            <h1 className="text-3xl font-black text-gray-900">الملف الشخصي</h1>
-            <p className="mt-2 text-gray-600">إدارة معلوماتك الشخصية</p>
+            <h1 className="text-3xl font-black text-brand-deep">الملف الشخصي</h1>
+            <p className="mt-2 text-brand-deep/80">إدارة معلوماتك الشخصية</p>
           </div>
 
           {/* Profile Card */}
           <div className="overflow-hidden rounded-3xl bg-white shadow-xl">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-8 sm:px-8">
+            <div className="bg-brand px-6 py-8 sm:px-8">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-2xl font-bold text-white backdrop-blur-sm">
@@ -125,7 +126,7 @@ const Profile = () => {
                   </div>
                   <div className="text-right">
                     <h2 className="text-2xl font-black text-white">{user.name}</h2>
-                    <p className="text-blue-100">{user.email}</p>
+                    <p className="text-cream">{user.email}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -137,7 +138,7 @@ const Profile = () => {
                   </button>
                   <button
                     onClick={confirmDelete}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-red-200 backdrop-blur-sm transition-colors hover:bg-red-500/30"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-cream backdrop-blur-sm transition-colors hover:bg-brand-deep/50"
                   >
                     <Trash2 className="h-5 w-5" />
                   </button>
@@ -174,10 +175,10 @@ const Profile = () => {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-gray-100 bg-gray-50 px-6 py-4">
+            <div className="border-t border-mist bg-cream px-6 py-4">
               <button
                 onClick={confirmLogout}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 py-4 font-bold text-white shadow-lg shadow-red-500/30 transition-all hover:scale-[1.02] hover:shadow-xl"
+                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-brand py-4 font-bold text-brand-deep shadow-lg shadow-brand/20 transition-all hover:bg-brand-deep hover:text-white"
               >
                 <LogOut className="h-5 w-5" />
                 تسجيل الخروج

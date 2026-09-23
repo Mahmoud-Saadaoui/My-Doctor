@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -66,6 +66,8 @@ const LocationPicker = ({ latitude, longitude, onLocationChange, onAddressChange
 
   useEffect(() => {
     if (latitude && longitude) {
+      // Keep the map viewport aligned with a profile loaded asynchronously.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPosition([latitude, longitude]);
     }
   }, [latitude, longitude]);
@@ -99,28 +101,22 @@ const LocationPicker = ({ latitude, longitude, onLocationChange, onAddressChange
     }
   }, [handleLocationSelect]);
 
-  // Memoize initial center
-  const initialCenter = useMemo(
-    () => [latitude || 36.8065, longitude || 10.1815],
-    [latitude, longitude]
-  );
-
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-          <Navigation className="h-5 w-5 text-blue-600" />
+        <label className="flex items-center gap-2 text-sm font-semibold text-brand-deep">
+          <Navigation className="h-5 w-5 text-brand" />
           حدد موقعك على الخريطة
         </label>
         <button
           type="button"
           onClick={handleGetCurrentLocation}
           disabled={isLoading}
-          className="flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-100 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-2 rounded-xl bg-cream px-4 py-2 text-sm font-semibold text-brand hover:bg-mist disabled:opacity-50 transition-colors"
         >
           {isLoading ? (
             <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent"></div>
               جاري التحديد...
             </>
           ) : (
@@ -132,11 +128,11 @@ const LocationPicker = ({ latitude, longitude, onLocationChange, onAddressChange
         </button>
       </div>
 
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-brand/70">
         انقر على الخريطة لتحديد موقعك أو استخدم زر "موقعي الحالي"
       </p>
 
-      <div className="relative z-10 h-64 overflow-hidden rounded-2xl border-2 border-gray-200 shadow-lg">
+      <div className="relative z-10 h-64 overflow-hidden rounded-2xl border-2 border-mist shadow-lg">
         <MapContainer
           center={position}
           zoom={15}
@@ -153,7 +149,7 @@ const LocationPicker = ({ latitude, longitude, onLocationChange, onAddressChange
       </div>
 
       {latitude && longitude && (
-        <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-sm text-green-700">
+        <div className="flex items-center gap-2 rounded-lg bg-mist p-3 text-sm text-brand-deep">
           <Navigation className="h-4 w-4" />
           <span>الموقع المحدد: {latitude.toFixed(4)}, {longitude.toFixed(4)}</span>
         </div>

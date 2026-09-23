@@ -1,12 +1,14 @@
-const { Sequelize } = require('sequelize');
-const db = require('./database');
 const User = require('./users');
-const Profile = require('./profile')
+const Profile = require('./profile');
+const Availability = require('./availability');
+const Appointment = require('./appointment');
 
 
 const models = {
     User: User,
-    Profile: Profile
+    Profile: Profile,
+    Availability,
+    Appointment,
 }
 
 Object.keys(models).forEach(key => {

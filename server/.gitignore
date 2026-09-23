@@ -40,3 +40,5 @@ Thumbs.db
 # Build
 dist/
 build/
+test/
+migrations/

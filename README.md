@@ -119,7 +119,7 @@ my-doctor/
 
 ### Prerequisites
 
-- **Node.js** 18+
+- **Node.js** 20+
 - **npm** or **pnpm**
 - **PostgreSQL** 12+
 
@@ -147,12 +147,27 @@ npm install
 Create a PostgreSQL database and configure environment variables:
 
 ```bash
-# server/.env
+# server/.env (see server/.env.example)
+NODE_ENV=development
 PORT=4000
+CLIENT_URL=http://localhost:5173
 DB_NAME=my_doctor_db
 DB_USER=postgres
 DB_PASS=your_secure_password
+DB_HOST=localhost
+DB_PORT=5432
 JWT_SECRET=a_long_secure_key_for_production
+JWT_EXPIRES_IN=15m
+
+# web/.env (see web/.env.example)
+VITE_API_URL=http://localhost:4000/api/v1
+```
+
+Run the database migrations before starting the API:
+
+```bash
+cd server
+npm run db:migrate
 ```
 
 ### 4. Run the Servers
@@ -160,7 +175,7 @@ JWT_SECRET=a_long_secure_key_for_production
 ```bash
 # Terminal 1 - Backend server
 cd server
-node app.js
+npm run dev
 
 # Terminal 2 - Frontend
 cd web
@@ -170,6 +185,7 @@ npm run client
 The application will be available at:
 - **Frontend**: http://localhost:5173
 - **API Server**: http://localhost:4000
+- **API Health**: http://localhost:4000/health
 
 ---
 
@@ -178,8 +194,10 @@ The application will be available at:
 ### Server (`server/`)
 
 ```bash
-node app.js      # Run the server
-npm start       # Run in production mode
+npm run dev          # Run with nodemon
+npm start            # Run in production mode
+npm run db:migrate   # Apply database migrations
+npm test             # Run backend tests
 ```
 
 ### Frontend (`web/`)
@@ -197,16 +215,14 @@ npm run lint      # Lint code with ESLint
 
 ### Theme Colors
 
-The app uses the following primary colors (editable in `tailwind.config.js`):
+The app uses the following design tokens in `web/src/index.css`:
 
 ```javascript
-// Button gradients
-from: #3b82f6 (blue)
-to: #1e40af (dark blue)
-
-// Background
-from: bg-blue-50 (very light blue)
-to: bg-indigo-50 (purple)
+brand-deep: #93441A
+brand: #B67332
+gold: #DAAB3A
+cream: #EEE6D8
+mist: #E5E7E6
 ```
 
 ### Typography
@@ -221,17 +237,28 @@ The project uses the **Cairo** font for optimal Arabic language support.
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| POST | `/account/signup` | Create new account |
-| POST | `/account/login` | Sign in |
-| GET | `/account/profile` | Get profile |
-| PUT | `/account/update-profile` | Update profile |
-| DELETE | `/account/delete-profile` | Delete account |
+| POST | `/api/v1/account/signup` | Create new account |
+| POST | `/api/v1/account/login` | Sign in |
+| GET | `/api/v1/account/profile` | Get profile |
+| PUT | `/api/v1/account/update-profile` | Update profile |
+| DELETE | `/api/v1/account/delete-profile` | Delete account |
 
 ### Doctors
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| GET | `/doctors?q=search` | Search doctors |
+| GET | `/api/v1/doctors?q=search&page=1&limit=12` | Search doctors |
+| GET | `/api/v1/doctors/:id` | Get doctor details |
+| GET | `/api/v1/doctors/:id/availability` | Get doctor availability |
+
+### Appointments
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/v1/appointments` | List the authenticated user's appointments |
+| POST | `/api/v1/appointments` | Request an appointment |
+| PATCH | `/api/v1/appointments/:id/cancel` | Cancel an appointment |
+| PATCH | `/api/v1/appointments/:id/status` | Update status as a doctor |
 
 ---
 
@@ -251,7 +278,7 @@ The project uses the **Cairo** font for optimal Arabic language support.
   "name": "Ahmed Mohamed",
   "email": "ahmed@example.com",
   "password": "password123",
-  "userType": true,  // true = doctor, false = regular user
+  "userType": "doctor",
   "specialization": "Cardiology",
   "address": "Tunis, Avenue Habib Bourguiba",
   "workingHours": "9 AM - 5 PM",
@@ -269,7 +296,7 @@ The project uses the **Cairo** font for optimal Arabic language support.
 
 - All passwords encrypted using bcrypt
 - JWT tokens for authentication
-- CSRF protection
+- Rate limiting and secure HTTP headers
 - SQL Injection protection (Sequelize ORM)
 
 ---

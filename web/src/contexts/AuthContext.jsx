@@ -1,22 +1,11 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
+import { createContext, useContext, useState, useMemo, useCallback } from "react";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Check for stored token on mount
-    const storedToken = localStorage.getItem("accessToken");
-    if (storedToken) {
-      setToken(storedToken);
-      setIsAuthenticated(true);
-    }
-    // Done checking authentication
-    setIsLoading(false);
-  }, []);
+  const [token, setToken] = useState(() => localStorage.getItem("accessToken"));
+  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(localStorage.getItem("accessToken")));
+  const [isLoading] = useState(false);
 
   const login = useCallback((accessToken) => {
     localStorage.setItem("accessToken", accessToken);

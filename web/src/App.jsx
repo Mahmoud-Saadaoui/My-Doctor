@@ -13,11 +13,12 @@ const Doctors = lazy(() => import("./pages/Doctors"));
 const DoctorDetails = lazy(() => import("./pages/DoctorDetails"));
 const Profile = lazy(() => import("./pages/Profile"));
 const UpdateProfile = lazy(() => import("./pages/UpdateProfile"));
+const Appointments = lazy(() => import("./pages/Appointments"));
 
 // Loading fallback component - memoized to prevent re-creation
 const PageLoader = memo(() => (
-  <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pt-16 flex items-center justify-center">
-    <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+  <div className="min-h-screen bg-cream pt-16 flex items-center justify-center">
+    <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand border-t-transparent"></div>
   </div>
 ));
 
@@ -38,19 +39,20 @@ function App() {
               <Route path="/doctors" element={<Doctors />} />
 
               {/* Protected Routes */}
-              <Route
-                path="/doctor/:id"
-                element={
-                  <ProtectedRoute>
-                    <DoctorDetails />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/doctor/:id" element={<DoctorDetails />} />
               <Route
                 path="/profile"
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/appointments"
+                element={
+                  <ProtectedRoute>
+                    <Appointments />
                   </ProtectedRoute>
                 }
               />

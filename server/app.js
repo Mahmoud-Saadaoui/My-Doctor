@@ -1,41 +1,79 @@
-const express = require('express');
 require('dotenv').config();
-const routes = require('./routes');
-const morgan = require('morgan');
+
+const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
 const db = require('./models/database');
-const models = require('./models')
+const routes = require('./routes');
 
-
-const port = process.env.PORT || 5000;
-
+const port = Number(process.env.PORT || 4000);
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
 const app = express();
 
-app.use(morgan('dev'))
-app.use(cors())
+app.disable('x-powered-by');
+app.use(helmet());
+app.use(cors({ origin: clientUrl, credentials: false }));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+}));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
-app.use(bodyParser.urlencoded({extended: false}))
-app.use(bodyParser.json())
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
 
-app.use('/', routes)
+app.use('/api/v1', routes);
 
-app.use((req, res, next) => {
-    const err = new Error('Not Found')
-    err.status = 404;
-    next(err)
-})
+app.use((_req, _res, next) => {
+  const error = new Error('Route not found');
+  error.status = 404;
+  next(error);
+});
 
-app.use((error, req, res, next) => {
-    res.status(error.status || 500)
-    res.json({
-        message: error.message
-    })
-})
+app.use((error, _req, res, _next) => {
+  const status = error.status || 500;
+  const message = status >= 500 ? 'Internal server error' : error.message;
 
+  if (status >= 500) {
+    console.error(error);
+  }
 
-db.sync().then(() => {
-    app.listen(port, () => {
-        console.log('express is running on port ' + port)
-    })
-})
+  res.status(status).json({
+    message,
+    ...(error.errors ? { errors: error.errors } : {}),
+  });
+});
+
+const startServer = async () => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET must be configured before starting the server');
+  }
+
+  try {
+    await db.authenticate();
+    console.log('Database connected successfully');
+  } catch (error) {
+    console.error('Unable to connect to the database', error);
+    throw error;
+  }
+
+  app.listen(port, () => {
+    console.log(`API running on port ${port}`);
+  });
+};
+
+if (require.main === module) {
+  startServer().catch(error => {
+    console.error('Unable to start the server', error);
+    process.exit(1);
+  });
+}
+
+module.exports = { app, startServer };

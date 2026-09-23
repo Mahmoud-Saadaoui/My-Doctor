@@ -8,8 +8,8 @@ const ProtectedRoute = memo(({ children }) => {
   if (isLoading) {
     // Still checking authentication
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand-deep border-t-transparent"></div>
       </div>
     );
   }

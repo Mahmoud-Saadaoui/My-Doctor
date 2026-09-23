@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Formik, Form } from "formik";
 import * as yup from "yup";
@@ -13,16 +13,11 @@ import LocationPicker from "../components/LocationPicker";
 
 const UpdateProfile = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [alert, setAlert] = useState({ visible: false, title: "", message: "", type: "alert" });
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    setLoading(true);
+  const fetchProfile = useCallback(async () => {
     try {
       const response = await axios.get(PROFILE_URL);
       setUser(response.data);
@@ -31,11 +26,17 @@ const UpdateProfile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // The request owns the loading/profile state for this screen.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetch
+    fetchProfile();
+  }, [fetchProfile]);
 
   const validationSchema = yup.object().shape({
     name: yup.string().required("اسم المستخدم مطلوب"),
-    password: yup.string().min(5, "يجب أن تكون كلمة المرور أكثر من خمسة محارف"),
+    password: yup.string().min(8, "يجب أن تحتوي كلمة المرور على 8 محارف على الأقل"),
     specialization: yup.string().when("userType", {
       is: true,
       then: (schema) => schema.required("يجب عليك ادخال التخصص"),
@@ -93,7 +94,7 @@ const UpdateProfile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pt-24 pb-8">
+    <div className="min-h-screen bg-cream pt-24 pb-8">
       <Alert
         visible={alert.visible}
         title={alert.title}
@@ -107,11 +108,11 @@ const UpdateProfile = () => {
         <div className="mx-auto max-w-2xl px-4">
           {/* Page Title */}
           <div className="text-center mb-8">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-brand-deep shadow-lg">
               <Edit className="h-7 w-7" />
             </div>
-            <h1 className="text-2xl font-black text-gray-900">تعديل البيانات الشخصية</h1>
-            <p className="mt-2 text-gray-600">حدث معلوماتك الشخصية</p>
+            <h1 className="text-2xl font-black text-brand-deep">تعديل البيانات الشخصية</h1>
+            <p className="mt-2 text-brand-deep/80">حدث معلوماتك الشخصية</p>
           </div>
 
           {/* Card */}
@@ -170,23 +171,23 @@ const UpdateProfile = () => {
                       icon={<Lock className="h-5 w-5" />}
                     />
 
-                    <div className="flex items-center gap-3 rounded-xl border-2 border-gray-200 bg-gray-50 p-4">
+                    <div className="flex items-center gap-3 rounded-xl border-2 border-mist bg-cream p-4">
                       <input
                         type="checkbox"
                         id="userType"
                         checked={values.userType}
                         disabled
-                        className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="h-5 w-5 rounded border-brand/40 text-brand focus:ring-brand"
                       />
-                      <label htmlFor="userType" className="flex cursor-pointer items-center gap-2 text-gray-700">
-                        <Stethoscope className="h-5 w-5 text-blue-600" />
+                      <label htmlFor="userType" className="flex cursor-pointer items-center gap-2 text-brand-deep">
+                        <Stethoscope className="h-5 w-5 text-brand" />
                         <span className="font-semibold">نوع الحساب: {values.userType ? "طبيب" : "مستخدم عادي"}</span>
                       </label>
                     </div>
 
                     {values.userType && (
-                      <div className="space-y-5 rounded-2xl border-2 border-blue-100 bg-blue-50/50 p-5">
-                        <p className="text-lg font-bold text-blue-900">معلومات الطبيب</p>
+                        <div className="space-y-5 rounded-2xl border-2 border-brand/20 bg-cream/70 p-5">
+                        <p className="text-lg font-bold text-brand-deep">معلومات الطبيب</p>
 
                         <Input
                           label="التخصص"
@@ -231,14 +232,14 @@ const UpdateProfile = () => {
                           onChange={handleChange}
                         />
                         {errors.address && touched.address && (
-                          <p className="text-right text-sm text-red-500">{errors.address}</p>
+                          <p className="text-right text-sm text-brand-deep">{errors.address}</p>
                         )}
 
                         {/* Display selected address */}
                         {values.address && (
-                          <div className="rounded-xl bg-green-50 p-4">
-                            <p className="text-sm font-medium text-green-700">العنوان المحدد:</p>
-                            <p className="mt-1 text-sm text-green-600">{values.address}</p>
+                          <div className="rounded-xl bg-mist p-4">
+                            <p className="text-sm font-medium text-brand-deep">العنوان المحدد:</p>
+                            <p className="mt-1 text-sm text-brand">{values.address}</p>
                           </div>
                         )}
 
@@ -269,7 +270,7 @@ const UpdateProfile = () => {
               <div className="mt-6">
                 <button
                   onClick={() => navigate("/profile")}
-                  className="w-full rounded-2xl border-2 border-gray-200 py-3.5 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+                  className="w-full rounded-2xl border-2 border-mist py-3.5 font-semibold text-brand-deep transition-colors hover:bg-cream"
                 >
                   عودة إلى الملف الشخصي
                 </button>

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Formik, Form } from "formik";
 import * as yup from "yup";
-import { User, Mail, Lock, Phone, Clock, Stethoscope, UserPlus } from "lucide-react";
+import { User, Mail, Lock, Phone, Clock, MapPin, Stethoscope, UserPlus } from "lucide-react";
 import axios from "../lib/axios";
 import { SIGNUP_URL } from "../lib/urls";
 import Loader from "../components/Loader";
@@ -19,7 +19,7 @@ const SignUp = () => {
   const validationSchema = yup.object().shape({
     name: yup.string().required("اسم المستخدم مطلوب"),
     email: yup.string().email("يجب إدخال بريد إلكتروني صحيح").required("البريد الإلكتروني مطلوب"),
-    password: yup.string().required("يجب عليك إدخال كلمة مرور صالحة").min(5, "يجب أن تكون كلمة المرور أكثر من خمسة محارف"),
+    password: yup.string().required("يجب عليك إدخال كلمة مرور صالحة").min(8, "يجب أن تحتوي كلمة المرور على 8 محارف على الأقل"),
     userType: yup.boolean(),
     specialization: yup.string().when("userType", {
       is: true,
@@ -79,7 +79,7 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8 pt-24">
+    <div className="min-h-screen bg-cream py-8 pt-24">
       <Loader loading={loading} title="جاري إنشاء حساب جديد" />
       <Alert
         visible={alert.visible}
@@ -92,14 +92,13 @@ const SignUp = () => {
 
       <div className="mx-auto max-w-2xl px-4">
         {/* Card */}
-        <div className="overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div className="overflow-hidden rounded-3xl border border-mist bg-white shadow-lg">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-10 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-white backdrop-blur-sm">
+          <div className="border-b border-mist bg-white px-8 py-8 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky text-brand-deep">
               <UserPlus className="h-8 w-8" />
             </div>
-            <h1 className="text-2xl font-black text-white">إنشاء حساب جديد</h1>
-            <p className="mt-2 text-blue-100">انضم إلى مجتمع طبيبي</p>
+            <h1 className="text-2xl font-black text-brand-deep">إنشاء حساب</h1>
           </div>
 
           {/* Form */}
@@ -158,24 +157,24 @@ const SignUp = () => {
                   />
 
                   {/* User Type Checkbox */}
-                  <div className="flex items-center gap-3 rounded-xl border-2 border-gray-200 bg-gray-50 p-4">
+                  <div className="flex items-center gap-3 rounded-xl border-2 border-mist bg-cream p-4">
                     <input
                       type="checkbox"
                       id="userType"
                       checked={values.userType}
                       onChange={(e) => setFieldValue("userType", e.target.checked)}
-                      className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-5 w-5 rounded border-brand/40 text-brand focus:ring-brand"
                     />
-                    <label htmlFor="userType" className="flex cursor-pointer items-center gap-2 text-gray-700">
-                      <Stethoscope className="h-5 w-5 text-blue-600" />
+                    <label htmlFor="userType" className="flex cursor-pointer items-center gap-2 text-brand-deep">
+                      <Stethoscope className="h-5 w-5 text-brand" />
                       <span className="font-semibold">أنا طبيب</span>
                     </label>
                   </div>
 
                   {/* Doctor Fields */}
                   {values.userType && (
-                    <div className="space-y-5 rounded-2xl border-2 border-blue-100 bg-blue-50/50 p-5">
-                      <p className="text-lg font-bold text-blue-900">معلومات الطبيب</p>
+                    <div className="space-y-5 rounded-2xl border-2 border-brand/20 bg-cream/70 p-5">
+                      <p className="text-lg font-bold text-brand-deep">معلومات الطبيب</p>
 
                       <Input
                         label="التخصص"
@@ -212,22 +211,22 @@ const SignUp = () => {
                         }}
                       />
 
-                      {/* Hidden input for address (filled by LocationPicker) */}
-                      <input
-                        type="hidden"
+                      <Input
+                        label="عنوان العيادة"
                         name="address"
+                        placeholder="أدخل عنوان العيادة أو حدده على الخريطة"
                         value={values.address}
                         onChange={handleChange}
+                        onBlur={handleBlur}
+                        error={touched.address && errors.address}
+                        icon={<MapPin className="h-5 w-5" />}
                       />
-                      {errors.address && touched.address && (
-                        <p className="text-right text-sm text-red-500">{errors.address}</p>
-                      )}
 
                       {/* Display selected address */}
                       {values.address && (
-                        <div className="rounded-xl bg-green-50 p-4">
-                          <p className="text-sm font-medium text-green-700">العنوان المحدد:</p>
-                          <p className="mt-1 text-sm text-green-600">{values.address}</p>
+                        <div className="rounded-xl bg-mist p-4">
+                          <p className="text-sm font-medium text-brand-deep">العنوان المحدد:</p>
+                          <p className="mt-1 text-sm text-brand">{values.address}</p>
                         </div>
                       )}
 
@@ -252,11 +251,11 @@ const SignUp = () => {
             </Formik>
 
             {/* Footer */}
-            <p className="mt-6 text-center text-gray-600">
+            <p className="mt-6 text-center text-brand-deep/80">
               لديك حساب بالفعل؟{" "}
               <button
                 onClick={() => navigate("/signin")}
-                className="font-bold text-blue-600 hover:text-blue-700 hover:underline"
+                className="font-bold text-brand hover:text-brand-deep hover:underline"
               >
                 تسجيل الدخول
               </button>

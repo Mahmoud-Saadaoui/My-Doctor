@@ -44,7 +44,7 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pt-16">
+    <div className="min-h-screen bg-cream pt-16">
       <Loader loading={loading} title="جاري تسجيل الدخول" />
       <Alert
         visible={alert.visible}
@@ -57,14 +57,13 @@ const SignIn = () => {
       <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
         <div className="w-full max-w-md">
           {/* Card */}
-          <div className="overflow-hidden rounded-3xl bg-white shadow-2xl">
+          <div className="overflow-hidden rounded-3xl border border-mist bg-white shadow-lg">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-10 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-white backdrop-blur-sm">
+            <div className="border-b border-mist bg-white px-8 py-8 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky text-brand-deep">
                 <LogIn className="h-8 w-8" />
               </div>
-              <h1 className="text-2xl font-black text-white">مرحباً بعودتك</h1>
-              <p className="mt-2 text-blue-100">سجل دخولك للمتابعة</p>
+              <h1 className="text-2xl font-black text-brand-deep">تسجيل الدخول</h1>
             </div>
 
             {/* Form */}
@@ -116,11 +115,11 @@ const SignIn = () => {
               </Formik>
 
               {/* Footer */}
-              <p className="mt-6 text-center text-gray-600">
+              <p className="mt-6 text-center text-brand-deep/80">
                 ليس لديك حساب؟{" "}
                 <button
                   onClick={() => navigate("/signup")}
-                  className="font-bold text-blue-600 hover:text-blue-700 hover:underline"
+                  className="font-bold text-brand hover:text-brand-deep hover:underline"
                 >
                   إنشاء حساب جديد
                 </button>

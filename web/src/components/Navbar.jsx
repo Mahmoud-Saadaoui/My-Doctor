@@ -27,11 +27,11 @@ const Navbar = () => {
     : [];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-lg border-t border-gray-200 shadow-lg sm:static sm:border-b sm:border-t-0 sm:shadow-md">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-cream/90 backdrop-blur-lg border-t border-mist shadow-lg sm:static sm:border-b sm:border-t-0 sm:shadow-md">
       <div className="mx-auto max-w-7xl px-4">
         <div className="flex items-center justify-around sm:justify-center sm:gap-8">
           {/* Logo */}
-          <Link to="/" className="hidden sm:flex items-center gap-2 font-black text-xl text-blue-600">
+            <Link to="/" className="hidden sm:flex items-center gap-2 font-black text-xl text-brand">
             <Stethoscope className="h-6 w-6" />
             طبيبي
           </Link>
@@ -44,8 +44,8 @@ const Navbar = () => {
                 to={item.path}
                 className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium transition-all sm:flex-row sm:px-4 sm:py-2 ${
                   isActive(item.path)
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                    ? "text-brand bg-cream"
+                    : "text-brand-deep/80 hover:text-brand hover:bg-mist"
                 }`}
               >
                 <item.icon className="h-5 w-5" />
@@ -59,8 +59,8 @@ const Navbar = () => {
                 to={item.path}
                 className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium transition-all sm:flex-row sm:px-4 sm:py-2 ${
                   isActive(item.path)
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                    ? "text-brand bg-cream"
+                    : "text-brand-deep/80 hover:text-brand hover:bg-mist"
                 }`}
               >
                 <item.icon className="h-5 w-5" />
@@ -71,7 +71,7 @@ const Navbar = () => {
             {isAuthenticated && (
               <button
                 onClick={handleLogout}
-                className="flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium text-gray-600 transition-all hover:text-red-600 hover:bg-red-50 sm:flex-row sm:px-4 sm:py-2"
+                className="flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium text-brand-deep/80 transition-all hover:text-brand-deep hover:bg-cream sm:flex-row sm:px-4 sm:py-2"
               >
                 <LogOut className="h-5 w-5" />
                 <span className="text-xs sm:text-sm">خروج</span>

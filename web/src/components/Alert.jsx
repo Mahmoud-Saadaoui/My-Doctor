@@ -5,19 +5,19 @@ const Alert = ({ visible, title, message, type = "alert", onClose, onClick }) =>
   if (!visible) return null;
 
   const icons = {
-    alert: <AlertCircle className="h-8 w-8 text-red-500" />,
-    success: <CheckCircle className="h-8 w-8 text-emerald-500" />,
-    question: <HelpCircle className="h-8 w-8 text-blue-500" />,
-    delete: <Trash2 className="h-8 w-8 text-red-500" />,
-    logout: <LogOut className="h-8 w-8 text-orange-500" />,
+    alert: <AlertCircle className="h-8 w-8 text-brand-deep" />,
+    success: <CheckCircle className="h-8 w-8 text-brand" />,
+    question: <HelpCircle className="h-8 w-8 text-brand" />,
+    delete: <Trash2 className="h-8 w-8 text-brand-deep" />,
+    logout: <LogOut className="h-8 w-8 text-gold" />,
   };
 
   const styles = {
-    alert: "border-red-200 bg-red-50",
-    success: "border-emerald-200 bg-emerald-50",
-    question: "border-blue-200 bg-blue-50",
-    delete: "border-red-200 bg-red-50",
-    logout: "border-orange-200 bg-orange-50",
+    alert: "border-brand-deep/30 bg-cream",
+    success: "border-brand/30 bg-mist",
+    question: "border-brand/30 bg-cream",
+    delete: "border-brand-deep/30 bg-cream",
+    logout: "border-gold/40 bg-cream",
   };
 
   // Types that require confirmation buttons (yes/no)
@@ -29,30 +29,30 @@ const Alert = ({ visible, title, message, type = "alert", onClose, onClick }) =>
         <div className="mb-4 flex items-start justify-between">
           <div className="flex items-center gap-3">
             {icons[type]}
-            <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+            <h3 className="text-xl font-bold text-brand-deep">{title}</h3>
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors"
+            className="rounded-full p-1 text-brand/70 hover:bg-mist hover:text-brand-deep transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
-        <p className="mb-6 text-gray-700 leading-relaxed">{message}</p>
+        <p className="mb-6 text-brand-deep leading-relaxed">{message}</p>
         <div className={`flex gap-3 ${confirmationTypes.includes(type) ? "justify-end" : "justify-center"}`}>
           {confirmationTypes.includes(type) ? (
             <>
               <button
                 onClick={onClick}
                 className={`rounded-xl px-6 py-2.5 font-semibold text-white transition-colors ${
-                  type === "delete" ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"
+                  type === "delete" ? "bg-brand-deep hover:bg-brand" : "bg-brand hover:bg-brand-deep"
                 }`}
               >
                 نعم
               </button>
               <button
                 onClick={onClose}
-                className="rounded-xl border-2 border-gray-300 px-6 py-2.5 font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+                className="rounded-xl border-2 border-brand/40 px-6 py-2.5 font-semibold text-brand-deep hover:bg-mist transition-colors"
               >
                 لا
               </button>
@@ -60,7 +60,7 @@ const Alert = ({ visible, title, message, type = "alert", onClose, onClick }) =>
           ) : (
             <button
               onClick={onClose}
-              className="rounded-xl bg-gray-900 px-8 py-2.5 font-semibold text-white hover:bg-gray-800 transition-colors"
+              className="rounded-xl bg-brand-deep px-8 py-2.5 font-semibold text-white hover:bg-brand transition-colors"
             >
               موافق
             </button>

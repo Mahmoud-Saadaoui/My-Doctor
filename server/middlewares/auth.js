@@ -2,20 +2,32 @@ const jsonwebtoken = require('jsonwebtoken');
 const models = require('../models');
 
 const isLoggedIn = async (req, res, next) => {
-    try {
-        if(!req.headers.authorization) {
-            return res.status(400).json({
-                message: "لم يتم توفير رمز التحقق"
-            })
-        }
+  const authorization = req.headers.authorization || '';
+  const [scheme, token] = authorization.split(' ');
 
-        const token = req.headers.authorization.split(" ")[1];
-        const decoded = jsonwebtoken.verify(token, process.env.JWT_SECRET)
-        req.currentUser = decoded;
-        next();
-    } catch(e) {
-        res.status(500).json(e.message)
+  if (!token || !['Bearer', 'JWT'].includes(scheme)) {
+    return res.status(401).json({ message: 'Authentication is required' });
+  }
+
+  try {
+    const decoded = jsonwebtoken.verify(token, process.env.JWT_SECRET);
+    const user = await models.User.findByPk(decoded.sub || decoded.id, {
+      attributes: { exclude: ['password'] },
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: 'User account no longer exists' });
     }
-}
+
+    req.currentUser = user;
+    next();
+  } catch (error) {
+    if (error.name === 'TokenExpiredError' || error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid or expired authentication token' });
+    }
+
+    next(error);
+  }
+};
 
 module.exports = isLoggedIn;

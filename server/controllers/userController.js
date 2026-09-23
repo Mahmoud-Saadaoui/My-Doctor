@@ -1,168 +1,172 @@
-const bcrybt = require('bcryptjs')
-const models = require('../models')
-const jsonwebtoken = require('jsonwebtoken')
+const bcrypt = require('bcryptjs');
+const jsonwebtoken = require('jsonwebtoken');
+const { UniqueConstraintError } = require('sequelize');
+const models = require('../models');
+const db = require('../models/database');
 
-exports.register = async (req, res) => {
-    const {name, email, password, userType, location, specialization, address, workingHours, phone} = req.body;
+const publicUserAttributes = { exclude: ['password'] };
 
-    try {
-        const hashPassword = await bcrybt.hash(password, 10)
-        const user = await models.User.create({
-            name,
-            email,
-            password: hashPassword,
-            userType,
-            latitude: location?.latitude,
-            longitude: location?.longitude
-        })
+const createToken = user => jsonwebtoken.sign(
+  { sub: user.id, userType: user.userType },
+  process.env.JWT_SECRET,
+  { expiresIn: process.env.JWT_EXPIRES_IN || '15m' },
+);
 
-        if(userType === 'doctor') {
-            const profile = await models.Profile.create({
-                userId: user.id,
-                specialization,
-                address,
-                workingHours,
-                phone
-            })
-        }
+exports.register = async (req, res, next) => {
+  const {
+    name,
+    email,
+    password,
+    userType = 'normal',
+    location,
+    specialization,
+    address,
+    workingHours,
+    phone,
+  } = req.body;
 
-        res.status(200).json({message: "تم إنشاء حسابك بنجاح"})
-    } catch (e) {
-        console.log("Registration error:", e);
-        res.status(500).json({
-            errors: [{message: e.message || "حدث خطأ أثناء التسجيل"}]
-        })
+  let transaction;
+
+  try {
+    transaction = await db.transaction();
+    const user = await models.User.create({
+      name,
+      email,
+      password: await bcrypt.hash(password, 12),
+      userType,
+      latitude: location?.latitude ?? null,
+      longitude: location?.longitude ?? null,
+    }, { transaction });
+
+    if (userType === 'doctor') {
+      await models.Profile.create({
+        userId: user.id,
+        specialization,
+        address,
+        workingHours,
+        phone,
+      }, { transaction });
     }
-}
 
+    await transaction.commit();
 
-exports.login = async (req, res) => {
-    const {email, password} = req.body;
+    res.status(201).json({
+      message: 'Account created successfully',
+      user: { id: user.id, name: user.name, email: user.email, userType: user.userType },
+    });
+  } catch (error) {
+    if (transaction) await transaction.rollback();
 
-    try {
-        const user = await models.User.findOne({where: {email}})
-
-        if(!user) {
-            return res.status(401).json({
-                message: "البريد الإلكتروني أو كلمة المرور غير صحيحين"
-            })
-        }
-
-        const authSuccess = await bcrybt.compare(password, user.password)
-
-        if(!authSuccess) { 
-            return res.status(401).json({
-                message: "البريد الإلكتروني أو كلمة المرور غير صحيحين"
-            })
-        }
-
-        const token = jsonwebtoken.sign({id: user.id, name: user.name, email: user.email}, process.env.JWT_SECRET);
-
-        res.status(200).json({accessToken:  token})
-    } catch (e) {
-        
+    if (error instanceof UniqueConstraintError) {
+      return res.status(409).json({ message: 'An account with this email already exists' });
     }
-}
 
+    next(error);
+  }
+};
+
+exports.login = async (req, res, next) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await models.User.findOne({ where: { email } });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    res.status(200).json({
+      accessToken: createToken(user),
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        userType: user.userType,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 exports.me = (req, res) => {
-    const user = req.currentUser;
-    res.json(user)
-}
+  res.json(req.currentUser);
+};
 
-exports.getProfile = async (req, res) => {
-    try {
-        const result = await models.User.findOne({
-            where: {id: req.currentUser.id},
-            include: [{model: models.Profile, as: "profile"}],
-            attributes: {exclude: ["password"]}
-        })
+exports.getProfile = async (req, res, next) => {
+  try {
+    const user = await models.User.findByPk(req.currentUser.id, {
+      include: [{ model: models.Profile, as: 'profile' }],
+      attributes: publicUserAttributes,
+    });
 
-        res.status(200).json(result)
-    } catch (e) {
-        res.status(500).json(e)
-    }
-}
-
-
-exports.updateProfile = async (req, res) => {
-    const {name, password, userType, specialization, address, location, workingHours, phone } = req.body;
-
-    try {
-      const updateData = {
-        name,
-        userType,
-      };
-
-      if (password) {
-        updateData.password = await bcrybt.hash(password, 10);
-      }
-
-      if (location) {
-        updateData.latitude = location.latitude;
-        updateData.longitude = location.longitude;
-      }
-
-      // Update user
-      await models.User.update(updateData, {where : {
-        id: req.currentUser.id
-      }})
-
-    if(userType === "doctor") {
-          // Check if profile exists, if not create it, if yes update it
-          const existingProfile = await models.Profile.findOne({
-            where: {userId: req.currentUser.id}
-          });
-
-          if (existingProfile) {
-            // Update existing profile
-            await models.Profile.update({
-              specialization,
-              address,
-              workingHours,
-              phone
-            }, {where: {userId: req.currentUser.id}})
-          } else {
-            // Create new profile
-            await models.Profile.create({
-              userId: req.currentUser.id,
-              specialization,
-              address,
-              workingHours,
-              phone
-            })
-          }
-    }
-    res.status(200).json({
-        message: "تم تعديل البيانات بنجاح"
-    })
-    } catch (e) {
-      console.log("Update error:", e);
-      res.status(500).json({
-        errors: [{message: e.message || "حدث خطأ أثناء التحديث"}]
-      });
-    }
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
   }
+};
 
-  exports.deleteProfile = async (req, res) => {
-    try {
-      // First delete the profile if it exists (for doctors)
-      await models.Profile.destroy({
-        where: { userId: req.currentUser.id },
-      });
+exports.updateProfile = async (req, res, next) => {
+  const {
+    name,
+    password,
+    userType,
+    specialization,
+    address,
+    location,
+    workingHours,
+    phone,
+  } = req.body;
+  let transaction;
 
-      // Then delete the user
-      await models.User.destroy({
-        where: { id: req.currentUser.id },
-      });
+  try {
+    transaction = await db.transaction();
+    const user = await models.User.findByPk(req.currentUser.id, { transaction, lock: transaction.LOCK.UPDATE });
 
-      res.status(200).json({
-        message: "تم حذف الحساب بنجاح"
-      });
-    } catch (e) {
-      console.log("Delete error:", e);
-      res.status(500).json({
-        errors: [{message: e.message || "حدث خطأ أثناء الحذف"}]
-      });
+    if (!user) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'User not found' });
     }
-  };
+
+    const updateData = { name, userType };
+    if (password) updateData.password = await bcrypt.hash(password, 12);
+    if (location) {
+      updateData.latitude = location.latitude ?? null;
+      updateData.longitude = location.longitude ?? null;
+    }
+
+    await user.update(updateData, { transaction });
+
+    if (userType === 'doctor') {
+      const [profile] = await models.Profile.findOrCreate({
+        where: { userId: user.id },
+        defaults: { userId: user.id, specialization, address, workingHours, phone },
+        transaction,
+      });
+
+      await profile.update({ specialization, address, workingHours, phone }, { transaction });
+    } else {
+      await models.Profile.destroy({ where: { userId: user.id }, transaction });
+    }
+
+    await transaction.commit();
+    res.status(200).json({ message: 'Profile updated successfully' });
+  } catch (error) {
+    if (transaction) await transaction.rollback();
+    next(error);
+  }
+};
+
+exports.deleteProfile = async (req, res, next) => {
+  try {
+    const deleted = await models.User.destroy({ where: { id: req.currentUser.id } });
+
+    if (!deleted) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};

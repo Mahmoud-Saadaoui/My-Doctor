@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Formik, Form } from "formik";
 import * as yup from "yup";
-import { User, Lock, ArrowRight, LogIn, ArrowLeft } from "lucide-react";
+import { User, Lock, ArrowRight, LogIn, ArrowLeft, Mail } from "lucide-react";
 import axios from "../lib/axios";
 import { SIGNIN_URL } from "../lib/urls";
 import { useAuth } from "../contexts/AuthContext";
@@ -10,20 +10,25 @@ import Loader from "../components/Loader";
 import Alert from "../components/Alert";
 import Input from "../components/Input";
 import Button from "../components/Button";
+import { useTranslation } from "react-i18next";
 
 const SignIn = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({ visible: false, title: "", message: "", type: "alert" });
+  const [emailNotVerified, setEmailNotVerified] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
 
   const signInValidationSchema = yup.object().shape({
-    email: yup.string().email("يجب إدخال بريد إلكتروني صحيح").required("البريد الإلكتروني مطلوب"),
-    password: yup.string().required("يجب عليك إدخال كلمة مرور صالحة"),
+    email: yup.string().email(t("validation.email")).required(t("validation.emailRequired")),
+    password: yup.string().required(t("validation.passwordRequired")),
   });
 
   const handleSignIn = async (values) => {
     setLoading(true);
+    setEmailNotVerified(false);
     try {
       const response = await axios.post(SIGNIN_URL, {
         email: values.email,
@@ -31,11 +36,13 @@ const SignIn = () => {
       });
       login(response.data.accessToken);
       navigate("/");
-    } catch (e) {
+    } catch (error) {
+      const isEmailNotVerified = error.response?.data?.messageKey === "auth.emailNotVerified";
+      setEmailNotVerified(isEmailNotVerified);
       setAlert({
         visible: true,
-        title: "تنبيه",
-        message: e.response?.data?.message || "حدث خطأ أثناء تسجيل الدخول",
+        title: t("auth.alert"),
+        message: error.response?.data?.message || t("auth.signinError"),
         type: "alert",
       });
     } finally {
@@ -43,9 +50,26 @@ const SignIn = () => {
     }
   };
 
+  const handleResendVerification = async () => {
+    setResendLoading(true);
+    try {
+      await axios.post("/account/resend-verification", { email: alert.email });
+      setAlert({
+        visible: true,
+        title: t("common.success"),
+        message: t("auth.verificationEmailSent"),
+        type: "success",
+      });
+    } catch {
+      // Silently fail - don't reveal if email exists
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-cream pt-16">
-      <Loader loading={loading} title="جاري تسجيل الدخول" />
+      <Loader loading={loading} title={t("auth.signinLoading")} />
       <Alert
         visible={alert.visible}
         title={alert.title}
@@ -63,7 +87,7 @@ const SignIn = () => {
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky text-brand-deep">
                 <LogIn className="h-8 w-8" />
               </div>
-              <h1 className="text-2xl font-black text-brand-deep">تسجيل الدخول</h1>
+              <h1 className="text-2xl font-black text-brand-deep">{t("auth.signinTitle")}</h1>
             </div>
 
             {/* Form */}
@@ -76,7 +100,7 @@ const SignIn = () => {
                 {({ handleChange, handleBlur, values, errors, touched, isValid }) => (
                   <Form className="space-y-5">
                     <Input
-                      label="البريد الإلكتروني"
+                      label={t("auth.email")}
                       name="email"
                       type="email"
                       placeholder="example@email.com"
@@ -88,7 +112,7 @@ const SignIn = () => {
                     />
 
                     <Input
-                      label="كلمة المرور"
+                      label={t("auth.password")}
                       name="password"
                       type="password"
                       placeholder="••••••••"
@@ -106,24 +130,45 @@ const SignIn = () => {
                       className="group mt-6"
                     >
                       <span className="flex items-center justify-center gap-2">
-                        دخول
+                        {t("auth.signinButton")}
                         <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
                       </span>
                     </Button>
+
+                    {emailNotVerified && (
+                      <button
+                        type="button"
+                        onClick={handleResendVerification}
+                        disabled={resendLoading}
+                        className="mt-3 flex w-full items-center justify-center gap-2 text-sm font-semibold text-brand hover:text-brand-deep disabled:opacity-50"
+                      >
+                        <Mail className="h-4 w-4" />
+                        {resendLoading ? t("common.loading") : t("auth.resendVerification")}
+                      </button>
+                    )}
                   </Form>
                 )}
               </Formik>
 
               {/* Footer */}
-              <p className="mt-6 text-center text-brand-deep/80">
-                ليس لديك حساب؟{" "}
+              <div className="mt-6 space-y-3 text-center">
                 <button
-                  onClick={() => navigate("/signup")}
-                  className="font-bold text-brand hover:text-brand-deep hover:underline"
+                  type="button"
+                  onClick={() => navigate("/forgot-password")}
+                  className="text-sm font-semibold text-brand hover:text-brand-deep hover:underline"
                 >
-                  إنشاء حساب جديد
+                  {t("auth.forgotPassword")}
                 </button>
-              </p>
+                <p className="text-brand-deep/80">
+                  {t("auth.noAccount")} {" "}
+                  <button
+                    onClick={() => navigate("/signup")}
+                    className="font-bold text-brand hover:text-brand-deep hover:underline"
+                  >
+                    {t("auth.createNewAccount")}
+                  </button>
+                </p>
+              </div>
             </div>
           </div>
         </div>

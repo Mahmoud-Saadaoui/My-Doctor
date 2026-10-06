@@ -1,4 +1,4 @@
-# 🏥 MyDoctor - Medical Platform
+# MyDoctor — Plateforme de mise en relation patients / médecins
 
 <div align="center">
 
@@ -6,314 +6,313 @@
 ![Vite](https://img.shields.io/badge/Vite-5.4.21-646CFF?style=flat&logo=vite)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.0-06B6D4?style=flat&logo=tailwind-css)
 ![Node](https://img.shields.io/badge/Node.js-18.0+-green?style=flat&logo=node.js)
+![MapLibre](https://img.shields.io/badge/MapLibre_GL-6.12.0-000000?style=flat)
 
-**A Medical Platform Connecting Doctors with Patients**
+**Plateforme web de recherche de médecins et de prise de rendez-vous en ligne**
 
-[Features](#-features) • [Tech Stack](#-tech-stack) • [Installation](#-installation) • [Project Structure](#-project-structure) • [API Endpoints](#-api-endpoints)
+[Stack technique](#-stack-technique) • [Installation](#-installation) • [Structure](#-structure-du-projet) • [API](#-api) • [Déploiement](#-déploiement)
 
 </div>
 
 ---
 
-## 📋 Overview
+## Aperçu
 
-**MyDoctor** is a modern web application that enables patients to search for and consult doctors online. The platform facilitates connections between doctors and patients through an intuitive Arabic interface with full responsive design support.
+**MyDoctor** est une application web moderne qui permet aux patients de rechercher des médecins par spécialité, nom ou proximité géographique, et de prendre rendez-vous en ligne. Les médecins gèrent leurs disponibilités et confirment les demandes de rendez-vous. Les administrateurs vérifient les profils de médecins avant leur mise en ligne.
 
----
+### Fonctionnalités principales
 
-## ✨ Features
-
-### 👤 For Users (Patients)
-- **Search for Doctors** - Fast search by name or specialization
-- **Doctor Profiles** - View complete doctor information
-- **Location Detection** - Find doctors near you
-- **Personal Account** - Manage your information and favorites
-
-### 👨‍⚕️ For Doctors
-- **Professional Profile** - Create your doctor profile
-- **Interactive Map Location** - Set your address easily using the interactive map
-- **Working Hours** - Specify your availability times
-- **Update Data** - Modify your information at any time
-
-### 🔐 Security & Authentication
-- Secure account registration (users and doctors)
-- JWT-based authentication
-- Protected routes
-- Account deletion
+- **Recherche géographique** — Trouver des médecins près de chez soi (tri par distance, rayon configurable)
+- **Prise de rendez-vous** — Le patient choisit un créneau disponible, le médecin confirme
+- **Gestion des disponibilités** — Le médecin définit ses plages horaires hebdomadaires
+- **Vérification des médecins** — Processus d'approbation par un administrateur
+- **Notifications email** — Alertes pour chaque étape du rendez-vous
+- **Multilingue** — Interface arabe (RTL) et anglais (LTR)
+- **Cartographie** — Carte interactive avec MapLibre GL et géocodage Nominatim
 
 ---
 
-## 🛠️ Tech Stack
+## Stack technique
 
-### Frontend
-| Technology | Version | Usage |
-|------------|---------|-------|
-| ![React](https://img.shields.io/badge/React-19.1.0-61DAFB?style=flat) | 19.1.0 | UI Library |
-| ![Vite](https://img.shields.io/badge/Vite-5.4.21-646CFF?style=flat) | 5.4.21 | Build tool & dev server |
-| ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.0-06B6D4?style=flat) | 4.0 | Styling |
-| ![React Router](https://img.shields.io/badge/React_Router-6.28.0-CA4AEB?style=flat) | 6.28.0 | Navigation |
-| ![Formik](https://img.shields.io/badge/Formik-2.4.5-#EA2B5D) | 2.4.5 | Form management |
-| ![Yup](https://img.shields.io/badge/Yup-1.3.3-#C8364C) | 1.3.3 | Data validation |
-| ![Axios](https://img.shields.io/badge/Axios-1.6.5-#5A2984) | 1.6.5 | HTTP requests |
-| ![Leaflet](https://img.shields.io/badge/Leaflet-1.7.1-1-800000?style=flat&logo=leaflet) | 1.7.1 | Interactive maps |
-| ![Lucide React](https://img.shields.io/badge/Lucide-latest-000000?style=flat) | latest | Icons |
+### Frontend (`web/`)
 
-### Backend
-| Technology | Version | Usage |
-|------------|---------|-------|
-| ![Node.js](https://img.shields.io/badge/Node.js-18+-green?style=flat&logo=node.js) | 18+ | Runtime environment |
-| ![Express](https://img.shields.io/badge/Express-4.19.2-000000?style=flat&logo=express) | 4.19.2 | API framework |
-| ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791?style=flat&logo=postgresql) | 15+ | Database |
-| ![Sequelize](https://img.shields.io/badge/Sequelize-6.37.0-336791?style=flat&logo=sequelize) | 6.37.0 | ORM |
-| ![JWT](https://img.shields.io/badge/JWT-ieee128?style=flat) | - | Authentication |
-| ![Bcrypt](https://img.shields.io/badge/Bcrypt-js-2.4.3-000000?style=flat) | 2.4.3 | Password encryption |
+| Technologie | Version | Usage |
+|-------------|---------|-------|
+| React | 19.1.0 | Bibliothèque UI |
+| Vite | 5.4.21 | Bundler et serveur de développement |
+| TailwindCSS | 4.0 | Framework CSS utilitaire |
+| React Router | 7.13.1 | Routage côté client |
+| MapLibre GL | 6.12.0 | Cartographie (via react-map-gl) |
+| Formik + Yup | 2.4.9 / 1.7.1 | Gestion et validation de formulaires |
+| Axios | 1.13.5 | Client HTTP |
+| i18next | 26.4.2 | Internationalisation (ar/en) |
+| lucide-react | 0.575.0 | Icônes |
 
----
+### Backend (`server/`)
 
-## 📁 Project Structure
-
-```
-my-doctor/
-├── 📱 mobile/              # React Native (old mobile version)
-├── 🌐 web/                # React.js (main web application)
-│   ├── src/
-│   │   ├── components/     # Reusable components
-│   │   │   ├── Alert.jsx      # Alert modals
-│   │   │   ├── Button.jsx     # Custom buttons
-│   │   │   ├── DoctorCard.jsx # Doctor card
-│   │   │   ├── Header.jsx     # Navigation bar
-│   │   │   ├── Input.jsx      # Input fields
-│   │   │   ├── Loader.jsx     # Loading spinner
-│   │   │   ├── LocationPicker.jsx # Map location picker
-│   │   │   └── ProtectedRoute.jsx # Route protection
-│   │   ├── contexts/        # Context API
-│   │   │   └── AuthContext.jsx # Authentication context
-│   │   ├── lib/             # Helper files
-│   │   │   ├── axios.js       # HTTP configuration
-│   │   │   ├── helpers.js     # Helper functions
-│   │   │   └── urls.js        # API URLs
-│   │   └── pages/           # Application pages
-│   │       ├── Home.jsx       # Home page
-│   │       ├── SignIn.jsx     # Sign in page
-│   │       ├── SignUp.jsx     # Sign up page
-│   │       ├── Doctors.jsx    # Doctor list
-│   │       ├── DoctorDetails.jsx # Doctor details
-│   │       ├── Profile.jsx    # User profile
-│   │       └── UpdateProfile.jsx # Edit profile
-│   ├── public/              # Static files
-│   ├── index.html
-│   ├── vite.config.js
-│   ├── tailwind.config.js
-│   └── package.json
-└── 🖥️ server/             # Backend Node.js/Express
-    ├── controllers/         # Business logic
-    ├── models/             # Data models
-    ├── routes/              # API routes
-    ├── middlewares/        # Middleware
-    └── app.js               # Entry point
-```
+| Technologie | Version | Usage |
+|-------------|---------|-------|
+| Node.js | 18+ | Environnement d'exécution |
+| Express | 4.18.2 | Framework API |
+| Prisma | 7.4.0 | ORM (PostgreSQL) |
+| PostgreSQL | 15+ | Base de données (Neon serverless) |
+| JWT | 9.0.2 | Authentification |
+| bcryptjs | 2.4.3 | Hachage des mots de passe |
+| Nodemailer | 6.9.16 | Envoi d'emails transactionnels |
+| express-validator | 7.0.1 | Validation des requêtes |
+| express-rate-limit | 7.5.0 | Limitation de débit |
+| helmet | 8.1.0 | En-têtes de sécurité |
+| i18next | 26.4.2 | Internationalisation côté serveur |
 
 ---
 
-## 🚀 Installation
+## Installation
 
-### Prerequisites
+### Prérequis
 
-- **Node.js** 20+
-- **npm** or **pnpm**
-- **PostgreSQL** 12+
+- **Node.js** 18+
+- **npm** ou **pnpm**
+- **PostgreSQL** 15+ (ou un compte [Neon](https://neon.tech) gratuit)
 
-### 1. Clone the Project
+### 1. Cloner le projet
 
 ```bash
 git clone https://github.com/your-username/my-doctor.git
 cd my-doctor
 ```
 
-### 2. Install Dependencies
+### 2. Installer les dépendances
 
 ```bash
-# Install server dependencies
+# Backend
 cd server
 npm install
 
-# Install frontend dependencies
+# Frontend
 cd ../web
 npm install
 ```
 
-### 3. Setup Database
-
-Create a PostgreSQL database and configure environment variables:
+### 3. Configurer les variables d'environnement
 
 ```bash
-# server/.env (see server/.env.example)
+# server/.env (voir server/.env.example)
 NODE_ENV=development
 PORT=4000
 CLIENT_URL=http://localhost:5173
-DB_NAME=my_doctor_db
-DB_USER=postgres
-DB_PASS=your_secure_password
-DB_HOST=localhost
-DB_PORT=5432
-JWT_SECRET=a_long_secure_key_for_production
+
+# Neon PostgreSQL
+DATABASE_URL=postgresql://USER:PASSWORD@EP-neon-project-pooler.REGION.aws.neon.tech/neondb?sslmode=require
+DIRECT_URL=postgresql://USER:PASSWORD@EP-neon-project.REGION.aws.neon.tech/neondb?sslmode=require
+
+JWT_SECRET=replace_with_a_long_random_secret
 JWT_EXPIRES_IN=15m
 
-# web/.env (see web/.env.example)
+# Recherche géographique
+MAX_SEARCH_RADIUS_KM=50
+DEFAULT_SEARCH_RADIUS_KM=10
+APPOINTMENT_DURATION_MINUTES=30
+
+# Emails (Nodemailer SMTP)
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your-email@example.com
+SMTP_PASS=your-email-password
+EMAIL_FROM=noreply@mydoctor.com
+
+# web/.env (voir web/.env.example)
 VITE_API_URL=http://localhost:4000/api/v1
+VITE_MAP_TILE_URL=https://tile.openstreetmap.org/{z}/{x}/{y}.png
+VITE_MAP_ATTRIBUTION=OpenStreetMap contributors
+VITE_GEOCODING_URL=https://nominatim.openstreetmap.org
+VITE_MAP_DEFAULT_CENTER=36.8065,10.1815
+VITE_MAP_DEFAULT_ZOOM=11
 ```
 
-Run the database migrations before starting the API:
+### 4. Exécuter les migrations
 
 ```bash
 cd server
 npm run db:migrate
 ```
 
-### 4. Run the Servers
+### 5. Démarrer les serveurs
 
 ```bash
-# Terminal 1 - Backend server
+# Terminal 1 — Backend
 cd server
 npm run dev
 
-# Terminal 2 - Frontend
+# Terminal 2 — Frontend
 cd web
-npm run client
+npm run dev
 ```
 
-The application will be available at:
-- **Frontend**: http://localhost:5173
-- **API Server**: http://localhost:4000
-- **API Health**: http://localhost:4000/health
+L'application est accessible sur :
+- **Frontend** : http://localhost:5173
+- **API** : http://localhost:4000
+- **Health check** : http://localhost:4000/health
 
 ---
 
-## 🎯 Available Scripts
+## Structure du projet
 
-### Server (`server/`)
-
-```bash
-npm run dev          # Run with nodemon
-npm start            # Run in production mode
-npm run db:migrate   # Apply database migrations
-npm test             # Run backend tests
 ```
-
-### Frontend (`web/`)
-
-```bash
-npm run client   # Run development server
-npm run build    # Build for production
-npm run preview  # Preview production build
-npm run lint      # Lint code with ESLint
-```
-
----
-
-## 🎨 Customization
-
-### Theme Colors
-
-The app uses the following design tokens in `web/src/index.css`:
-
-```javascript
-brand-deep: #93441A
-brand: #B67332
-gold: #DAAB3A
-cream: #EEE6D8
-mist: #E5E7E6
-```
-
-### Typography
-
-The project uses the **Cairo** font for optimal Arabic language support.
-
----
-
-## 📄 API Endpoints
-
-### Authentication
-
-| Method | Route | Description |
-|--------|-------|-------------|
-| POST | `/api/v1/account/signup` | Create new account |
-| POST | `/api/v1/account/login` | Sign in |
-| GET | `/api/v1/account/profile` | Get profile |
-| PUT | `/api/v1/account/update-profile` | Update profile |
-| DELETE | `/api/v1/account/delete-profile` | Delete account |
-
-### Doctors
-
-| Method | Route | Description |
-|--------|-------|-------------|
-| GET | `/api/v1/doctors?q=search&page=1&limit=12` | Search doctors |
-| GET | `/api/v1/doctors/:id` | Get doctor details |
-| GET | `/api/v1/doctors/:id/availability` | Get doctor availability |
-
-### Appointments
-
-| Method | Route | Description |
-|--------|-------|-------------|
-| GET | `/api/v1/appointments` | List the authenticated user's appointments |
-| POST | `/api/v1/appointments` | Request an appointment |
-| PATCH | `/api/v1/appointments/:id/cancel` | Cancel an appointment |
-| PATCH | `/api/v1/appointments/:id/status` | Update status as a doctor |
-
----
-
-## 🎓 Usage Examples
-
-### Searching for a Doctor
-```javascript
-// Frontend search
-// Searches in: name, specialization, email
-// Case-insensitive search
-```
-
-### Creating a Doctor Account
-```javascript
-// Registration data
-{
-  "name": "Ahmed Mohamed",
-  "email": "ahmed@example.com",
-  "password": "password123",
-  "userType": "doctor",
-  "specialization": "Cardiology",
-  "address": "Tunis, Avenue Habib Bourguiba",
-  "workingHours": "9 AM - 5 PM",
-  "phone": "21612345678",
-  "location": {
-    "latitude": 36.8065,
-    "longitude": 10.1815
-  }
-}
+my-doctor/
+├── web/                      # Frontend React (Vite)
+│   ├── src/
+│   │   ├── components/       # Composants réutilisables
+│   │   │   ├── Alert.jsx
+│   │   │   ├── Button.jsx
+│   │   │   ├── DoctorCard.jsx
+│   │   │   ├── Header.jsx
+│   │   │   ├── Input.jsx
+│   │   │   ├── Loader.jsx
+│   │   │   ├── LocationPicker.jsx
+│   │   │   ├── MapView.jsx
+│   │   │   ├── Navbar.jsx
+│   │   │   └── ProtectedRoute.jsx
+│   │   ├── contexts/         # Context API
+│   │   │   └── AuthContext.jsx
+│   │   ├── i18n/             # Traductions
+│   │   │   ├── index.js
+│   │   │   └── locales/
+│   │   │       ├── ar.json
+│   │   │       └── en.json
+│   │   ├── lib/              # Utilitaires
+│   │   │   ├── axios.js
+│   │   │   ├── helpers.js
+│   │   │   └── urls.js
+│   │   ├── pages/            # Pages de l'application
+│   │   │   ├── Home.jsx
+│   │   │   ├── SignIn.jsx
+│   │   │   ├── SignUp.jsx
+│   │   │   ├── Doctors.jsx
+│   │   │   ├── DoctorDetails.jsx
+│   │   │   ├── Profile.jsx
+│   │   │   ├── UpdateProfile.jsx
+│   │   │   ├── Appointments.jsx
+│   │   │   ├── DoctorAvailability.jsx
+│   │   │   ├── Terms.jsx
+│   │   │   └── Privacy.jsx
+│   │   ├── App.jsx           # Routeur principal
+│   │   ├── main.jsx          # Point d'entrée
+│   │   └── index.css         # Styles globaux + Tailwind
+│   ├── public/
+│   ├── vite.config.js
+│   ├── tailwind.config.js
+│   ├── eslint.config.js
+│   └── package.json
+│
+└── server/                   # Backend Node.js/Express
+    ├── config/               # Configuration (DB, i18n)
+    ├── controllers/          # Logique métier
+    ├── errors/               # Classes d'erreur personnalisées
+    ├── locales/              # Traductions serveur
+    ├── middlewares/          # Auth, validation, erreurs
+    ├── prisma/               # Schéma Prisma + migrations
+    ├── routes/               # Définition des routes API
+    ├── services/             # Services (email)
+    ├── test/                 # Tests backend
+    ├── app.js                # Point d'entrée Express
+    └── package.json
 ```
 
 ---
 
-## 🔒 Security
+## API
 
-- All passwords encrypted using bcrypt
-- JWT tokens for authentication
-- Rate limiting and secure HTTP headers
-- SQL Injection protection (Sequelize ORM)
+Toutes les routes sont préfixées par `/api/v1`.
+
+### Authentification
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| POST | `/account/signup` | Créer un compte |
+| POST | `/account/login` | Se connecter |
+| GET | `/account/me` | Utilisateur courant |
+| GET | `/account/profile` | Profil utilisateur |
+| PUT | `/account/update-profile` | Mettre à jour le profil |
+| DELETE | `/account/delete-profile` | Supprimer le compte |
+| GET | `/account/verify-email` | Vérifier l'email |
+| POST | `/account/resend-verification` | Renvoyer l'email de vérification |
+| POST | `/account/forgot-password` | Demander un reset |
+| POST | `/account/reset-password` | Réinitialiser le mot de passe |
+
+### Médecins
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| GET | `/doctors` | Rechercher des médecins |
+| GET | `/doctors?lat=36.8&lng=10.1&radiusKm=10&sort=distance` | Recherche par proximité |
+| GET | `/doctors?q=cardiology&page=1&limit=12` | Recherche par texte + pagination |
+| GET | `/doctors/:id` | Détails d'un médecin |
+| GET | `/doctors/:id/availability` | Disponibilités hebdomadaires |
+| GET | `/doctors/:id/available-slots?startDate=2024-01-01&endDate=2024-01-31` | Créneaux disponibles |
+| POST | `/doctors/me/availability` | Ajouter une disponibilité (médecin) |
+| DELETE | `/doctors/me/availability/:id` | Supprimer une disponibilité (médecin) |
+
+### Rendez-vous
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| GET | `/appointments` | Liste des rendez-vous de l'utilisateur |
+| POST | `/appointments` | Demander un rendez-vous |
+| PATCH | `/appointments/:id/cancel` | Annuler un rendez-vous |
+| PATCH | `/appointments/:id/status` | Changer le statut (médecin) |
+
+### Administration
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| GET | `/admin/doctors/pending` | Médecins en attente de vérification |
+| PATCH | `/admin/doctors/:id/approve` | Approuver un médecin |
+| PATCH | `/admin/doctors/:id/reject` | Refuser un médecin |
 
 ---
 
-## 📞 Support
+## Déploiement
 
-For any questions or support, please open an issue on GitHub.
+### Backend (Render / Railway / Fly.io)
+
+1. Configurer les variables d'environnement de production
+2. Exécuter `npm run db:migrate:deploy` pour appliquer les migrations
+3. Démarrer avec `npm start`
+
+### Frontend (Vercel / Netlify)
+
+1. Configurer `VITE_API_URL` vers l'URL de production de l'API
+2. Exécuter `npm run build`
+3. Déployer le dossier `dist/`
+
+### Base de données (Neon)
+
+- Les sauvegardes automatiques sont gérées par Neon
+- Pour une restauration : utiliser le dashboard Neon ou `pg_restore`
+
+---
+
+## Sécurité
+
+- Mots de passe hachés avec bcrypt
+- Tokens JWT pour l'authentification (expiration 15 min)
+- Validation des entrées côté serveur (express-validator)
+- Limitation de débit (express-rate-limit)
+- En-têtes de sécurité (helmet)
+- Protection CORS configurée
+- Vérification email avant activation
+- Tokens de reset à usage unique et durée limitée
+
+---
+
+## Licence
+
+ISC
 
 ---
 
 <div align="center">
 
-**Built with React & Node.js**
-
-![Star](https://img.shields.io/badge/Star-if%20you%20use%20this%20repository-steel-blue?style=flat)
-![Fork](https://img.shields.io/badge/Fork-if%20you%20like%20this%20repository-lightgrey?style=flat)
-
-⭐ If you like this project, give it a star!
+**Construit avec React, Node.js et PostgreSQL**
 
 </div>

@@ -1,10 +1,21 @@
-const bcrypt = require('bcryptjs');
-const jsonwebtoken = require('jsonwebtoken');
-const { UniqueConstraintError } = require('sequelize');
-const models = require('../models');
-const db = require('../models/database');
+import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
+import jsonwebtoken from 'jsonwebtoken';
+import prisma from '../config/db.js';
 
-const publicUserAttributes = { exclude: ['password'] };
+const publicUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  userType: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
+const publicUserWithProfileSelect = {
+  ...publicUserSelect,
+  profile: true,
+};
 
 const createToken = user => jsonwebtoken.sign(
   { sub: user.id, userType: user.userType },
@@ -12,7 +23,7 @@ const createToken = user => jsonwebtoken.sign(
   { expiresIn: process.env.JWT_EXPIRES_IN || '15m' },
 );
 
-exports.register = async (req, res, next) => {
+export const register = async (req, res, next) => {
   const {
     name,
     email,
@@ -25,57 +36,85 @@ exports.register = async (req, res, next) => {
     phone,
   } = req.body;
 
-  let transaction;
+  // Generate email verification token (24-hour expiry)
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   try {
-    transaction = await db.transaction();
-    const user = await models.User.create({
-      name,
-      email,
-      password: await bcrypt.hash(password, 12),
-      userType,
-      latitude: location?.latitude ?? null,
-      longitude: location?.longitude ?? null,
-    }, { transaction });
+    const user = await prisma.$transaction(async tx => {
+      const createdUser = await tx.user.create({
+        data: {
+          name,
+          email,
+          password: await bcrypt.hash(password, 12),
+          userType,
+          latitude: location?.latitude ?? null,
+          longitude: location?.longitude ?? null,
+          emailVerificationToken: verificationToken,
+          emailVerificationExpires: verificationExpires,
+        },
+      });
 
-    if (userType === 'doctor') {
-      await models.Profile.create({
-        userId: user.id,
-        specialization,
-        address,
-        workingHours,
-        phone,
-      }, { transaction });
-    }
+      if (userType === 'doctor') {
+        await tx.profile.create({
+          data: {
+            userId: createdUser.id,
+            specialization,
+            address,
+            workingHours,
+            phone,
+          },
+        });
+      }
 
-    await transaction.commit();
+      return createdUser;
+    });
 
     res.status(201).json({
-      message: 'Account created successfully',
-      user: { id: user.id, name: user.name, email: user.email, userType: user.userType },
+      message: req.t('auth.register.success'),
+      messageKey: 'auth.register.success',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        userType: user.userType,
+      },
     });
   } catch (error) {
-    if (transaction) await transaction.rollback();
-
-    if (error instanceof UniqueConstraintError) {
-      return res.status(409).json({ message: 'An account with this email already exists' });
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        message: req.t('auth.register.emailAlreadyUsed'),
+        messageKey: 'auth.register.emailAlreadyUsed',
+      });
     }
 
-    next(error);
+    return next(error);
   }
 };
 
-exports.login = async (req, res, next) => {
+export const login = async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
-    const user = await models.User.findOne({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({
+        message: req.t('auth.login.invalidCredentials'),
+        messageKey: 'auth.login.invalidCredentials',
+      });
     }
 
-    res.status(200).json({
+    // Block sign-in until the email address has been verified
+    if (!user.isEmailVerified) {
+      return res.status(403).json({
+        message: req.t('auth.emailNotVerified'),
+        messageKey: 'auth.emailNotVerified',
+        language: req.language,
+      });
+    }
+
+    return res.status(200).json({
       accessToken: createToken(user),
       user: {
         id: user.id,
@@ -85,88 +124,123 @@ exports.login = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
-exports.me = (req, res) => {
+export const me = (req, res) => {
   res.json(req.currentUser);
 };
 
-exports.getProfile = async (req, res, next) => {
+export const getProfile = async (req, res, next) => {
   try {
-    const user = await models.User.findByPk(req.currentUser.id, {
-      include: [{ model: models.Profile, as: 'profile' }],
-      attributes: publicUserAttributes,
+    const user = await prisma.user.findUnique({
+      where: { id: req.currentUser.id },
+      select: publicUserWithProfileSelect,
     });
 
-    res.status(200).json(user);
+    return res.status(200).json(user);
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
-exports.updateProfile = async (req, res, next) => {
+export const updateProfile = async (req, res, next) => {
   const {
     name,
     password,
-    userType,
+    // userType is intentionally NOT read from req.body.
+    // Role changes must go through the admin approval flow.
     specialization,
     address,
     location,
     workingHours,
     phone,
   } = req.body;
-  let transaction;
 
   try {
-    transaction = await db.transaction();
-    const user = await models.User.findByPk(req.currentUser.id, { transaction, lock: transaction.LOCK.UPDATE });
+    const updated = await prisma.$transaction(async tx => {
+      const user = await tx.user.findUnique({ where: { id: req.currentUser.id } });
 
-    if (!user) {
-      await transaction.rollback();
-      return res.status(404).json({ message: 'User not found' });
-    }
+      if (!user) {
+        return false;
+      }
 
-    const updateData = { name, userType };
-    if (password) updateData.password = await bcrypt.hash(password, 12);
-    if (location) {
-      updateData.latitude = location.latitude ?? null;
-      updateData.longitude = location.longitude ?? null;
-    }
+      // Build update data without userType - role is managed by admins only
+      const userData = {};
+      if (name !== undefined) userData.name = name;
+      if (password) userData.password = await bcrypt.hash(password, 12);
+      if (location) {
+        userData.latitude = location.latitude ?? null;
+        userData.longitude = location.longitude ?? null;
+      }
 
-    await user.update(updateData, { transaction });
-
-    if (userType === 'doctor') {
-      const [profile] = await models.Profile.findOrCreate({
-        where: { userId: user.id },
-        defaults: { userId: user.id, specialization, address, workingHours, phone },
-        transaction,
+      await tx.user.update({
+        where: { id: user.id },
+        data: userData,
       });
 
-      await profile.update({ specialization, address, workingHours, phone }, { transaction });
-    } else {
-      await models.Profile.destroy({ where: { userId: user.id }, transaction });
+      // Use the existing user's role, not anything from the request body
+      if (user.userType === 'doctor') {
+        const existingProfile = await tx.profile.findUnique({ where: { userId: user.id } });
+        const profileData = {
+          specialization: specialization ?? existingProfile?.specialization,
+          address: address ?? existingProfile?.address,
+          workingHours: workingHours ?? existingProfile?.workingHours,
+          phone: phone ?? existingProfile?.phone,
+        };
+
+        if (existingProfile) {
+          await tx.profile.update({
+            where: { userId: user.id },
+            data: profileData,
+          });
+        } else {
+          await tx.profile.create({
+            data: {
+              userId: user.id,
+              ...profileData,
+            },
+          });
+        }
+      } else {
+        await tx.profile.deleteMany({ where: { userId: user.id } });
+      }
+
+      return true;
+    });
+
+    if (!updated) {
+      return res.status(404).json({
+        message: req.t('auth.userNotFound'),
+        messageKey: 'auth.userNotFound',
+      });
     }
 
-    await transaction.commit();
-    res.status(200).json({ message: 'Profile updated successfully' });
+    return res.status(200).json({
+      message: req.t('auth.profileUpdated'),
+      messageKey: 'auth.profileUpdated',
+    });
   } catch (error) {
-    if (transaction) await transaction.rollback();
-    next(error);
+    return next(error);
   }
 };
 
-exports.deleteProfile = async (req, res, next) => {
+export const deleteProfile = async (req, res, next) => {
   try {
-    const deleted = await models.User.destroy({ where: { id: req.currentUser.id } });
-
-    if (!deleted) {
-      return res.status(404).json({ message: 'User not found' });
+    await prisma.user.delete({ where: { id: req.currentUser.id } });
+    return res.status(200).json({
+      message: req.t('auth.accountDeleted'),
+      messageKey: 'auth.accountDeleted',
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        message: req.t('auth.userNotFound'),
+        messageKey: 'auth.userNotFound',
+      });
     }
 
-    res.status(200).json({ message: 'Account deleted successfully' });
-  } catch (error) {
-    next(error);
+    return next(error);
   }
 };

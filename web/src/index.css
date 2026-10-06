@@ -68,7 +68,7 @@ a {
 
 .leaflet-container {
   font-family: "Cairo", sans-serif;
-  direction: rtl;
+  direction: inherit;
 }
 
 *:focus-visible {
@@ -96,7 +96,7 @@ a {
   width: min(1180px, calc(100% - 48px));
   height: 100%;
   margin-inline: auto;
-  direction: rtl;
+  direction: inherit;
 }
 
 .app-logo {
@@ -207,7 +207,7 @@ a {
   grid-template-columns: minmax(0, 1fr) minmax(380px, 0.9fr);
   align-items: center;
   gap: 45px;
-  direction: rtl;
+   direction: inherit;
 }
 
 .home-hero__copy {
@@ -244,7 +244,7 @@ a {
   border: 4px solid #fff;
   border-radius: 999px;
   background: #fff;
-  direction: rtl;
+   direction: inherit;
 }
 
 .home-doctolib-search label {
@@ -364,7 +364,7 @@ a {
   color: var(--color-ink);
   background: #fff;
   box-shadow: 0 10px 25px rgba(18, 59, 87, 0.16);
-  direction: rtl;
+   direction: inherit;
 }
 
 .home-hero__badge span {

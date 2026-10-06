@@ -1,27 +1,16 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
+import React, { useState, useCallback } from 'react';
 import { Navigation } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import MapView from "./MapView";
 
-// Fix for default marker icon in Leaflet - do this once
-if (typeof window !== "undefined" && !L.Icon.Default.prototype._getIconUrl) {
-  delete L.Icon.Default.prototype._getIconUrl;
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-    iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-  });
-}
-
-// Reverse geocoding function - moved outside component to avoid recreation
-const getAddressFromCoords = async (lat, lng) => {
+// Reverse geocoding function using Nominatim (OpenStreetMap)
+const getAddressFromCoords = async (lat, lng, language) => {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ar`,
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=${language}`,
       { signal: controller.signal }
     );
     clearTimeout(timeoutId);
@@ -36,77 +25,60 @@ const getAddressFromCoords = async (lat, lng) => {
   }
 };
 
-// Component to handle map clicks
-const MapClickHandler = ({ onLocationSelect }) => {
-  useMapEvents({
-    click(e) {
-      onLocationSelect(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return null;
-};
-
-// Memoized map click handler
-const MemoizedMapClickHandler = React.memo(MapClickHandler);
-
-// Component to update map view when location changes
-const MapViewUpdater = ({ latitude, longitude }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (latitude && longitude) {
-      map.setView([latitude, longitude], 15);
-    }
-  }, [latitude, longitude, map]);
-  return null;
-};
-
 const LocationPicker = ({ latitude, longitude, onLocationChange, onAddressChange }) => {
-  const [position, setPosition] = useState([latitude || 36.8065, longitude || 10.1815]); // Default: Tunis
+  const { t, i18n } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
+  const [mapCenter, setMapCenter] = useState([
+    latitude || 36.8065,
+    longitude || 10.1815,
+  ]);
 
-  useEffect(() => {
-    if (latitude && longitude) {
-      // Keep the map viewport aligned with a profile loaded asynchronously.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPosition([latitude, longitude]);
-    }
-  }, [latitude, longitude]);
-
-  const handleLocationSelect = useCallback(async (lat, lng) => {
+  const handleMapClick = useCallback(async ({ lat, lng }) => {
     setIsLoading(true);
-    setPosition([lat, lng]);
+    setMapCenter([lat, lng]);
     onLocationChange(lat, lng);
 
     // Get address from coordinates using reverse geocoding
-    const address = await getAddressFromCoords(lat, lng);
+    const address = await getAddressFromCoords(lat, lng, i18n.language);
     if (address && onAddressChange) {
       onAddressChange(address);
     }
     setIsLoading(false);
-  }, [onLocationChange, onAddressChange]);
+  }, [i18n.language, onLocationChange, onAddressChange]);
 
   const handleGetCurrentLocation = useCallback(() => {
-    if (navigator.geolocation) {
-      setIsLoading(true);
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          await handleLocationSelect(latitude, longitude);
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          setIsLoading(false);
-        }
-      );
+    if (!navigator.geolocation) {
+      console.error("Geolocation is not supported by this browser");
+      return;
     }
-  }, [handleLocationSelect]);
+
+    setIsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude: lat, longitude: lng } = position.coords;
+        setMapCenter([lat, lng]);
+        onLocationChange(lat, lng);
+
+        const address = await getAddressFromCoords(lat, lng, i18n.language);
+        if (address && onAddressChange) {
+          onAddressChange(address);
+        }
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        setIsLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  }, [i18n.language, onLocationChange, onAddressChange]);
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <label className="flex items-center gap-2 text-sm font-semibold text-brand-deep">
           <Navigation className="h-5 w-5 text-brand" />
-          حدد موقعك على الخريطة
+          {t("location.selectOnMap")}
         </label>
         <button
           type="button"
@@ -116,42 +88,45 @@ const LocationPicker = ({ latitude, longitude, onLocationChange, onAddressChange
         >
           {isLoading ? (
             <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent"></div>
-              جاري التحديد...
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+              {t("location.locating")}
             </>
           ) : (
             <>
               <Navigation className="h-4 w-4" />
-              موقعي الحالي
+              {t("location.currentLocation")}
             </>
           )}
         </button>
       </div>
 
       <p className="text-xs text-brand/70">
-        انقر على الخريطة لتحديد موقعك أو استخدم زر "موقعي الحالي"
+        {t("location.hint")}
       </p>
 
       <div className="relative z-10 h-64 overflow-hidden rounded-2xl border-2 border-mist shadow-lg">
-        <MapContainer
-          center={position}
+        <MapView
+          center={mapCenter}
           zoom={15}
-          style={{ height: "100%", width: "100%" }}
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          />
-          <MapViewUpdater latitude={position[0]} longitude={position[1]} />
-          <MemoizedMapClickHandler onLocationSelect={handleLocationSelect} />
-          <Marker position={position} />
-        </MapContainer>
+          height="100%"
+          onMapClick={handleMapClick}
+          markers={
+            latitude && longitude
+              ? [{ id: "selected", latitude, longitude, selected: true }]
+              : []
+          }
+        />
       </div>
 
       {latitude && longitude && (
         <div className="flex items-center gap-2 rounded-lg bg-mist p-3 text-sm text-brand-deep">
           <Navigation className="h-4 w-4" />
-          <span>الموقع المحدد: {latitude.toFixed(4)}, {longitude.toFixed(4)}</span>
+          <span>
+            {t("location.selected", {
+              latitude: latitude.toFixed(4),
+              longitude: longitude.toFixed(4),
+            })}
+          </span>
         </div>
       )}
     </div>

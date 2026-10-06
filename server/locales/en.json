@@ -1,0 +1,109 @@
+{
+  "common": {
+    "helloWorld": "Hello World!"
+  },
+  "auth": {
+    "register": {
+      "success": "Account created successfully.",
+      "emailAlreadyUsed": "An account with this email already exists."
+    },
+    "login": {
+      "invalidCredentials": "Invalid email or password."
+    },
+    "authenticationRequired": "Authentication is required.",
+    "accountNotFound": "User account no longer exists.",
+    "invalidToken": "Invalid or expired authentication token.",
+    "userNotFound": "User not found.",
+    "profileUpdated": "Profile updated successfully.",
+    "accountDeleted": "Account deleted successfully.",
+    "forbidden": "You do not have permission to access this resource.",
+    "emailNotVerified": "Please verify your email address before signing in.",
+    "verificationEmailSent": "A verification email has been sent to your address.",
+    "invalidVerificationToken": "Invalid or expired verification link.",
+    "emailVerified": "Your email has been verified successfully.",
+    "passwordResetSent": "A password reset link has been sent to your email.",
+    "invalidResetToken": "Invalid or expired password reset link.",
+    "passwordReset": "Your password has been reset successfully.",
+    "verificationEmailSent": "A verification email has been sent to your address.",
+    "emailVerified": "Your email has been verified successfully."
+  },
+  "admin": {
+    "doctorNotFound": "Doctor not found.",
+    "doctorApproved": "Doctor profile approved successfully.",
+    "doctorRejected": "Doctor profile rejected successfully."
+  },
+  "doctors": {
+    "notFound": "Doctor not found.",
+    "geoBothCoordsRequired": "Both latitude and longitude are required for location search.",
+    "geoInvalidCoords": "Invalid coordinates.",
+    "geoInvalidLat": "Latitude must be between -90 and 90.",
+    "geoInvalidLng": "Longitude must be between -180 and 180.",
+    "geoInvalidRadius": "Search radius must be a positive number.",
+    "geoRadiusTooLarge": "Search radius exceeds the maximum allowed distance."
+  },
+  "availability": {
+    "onlyDoctors": "Only doctors can manage availability.",
+    "endBeforeStart": "End time must be after start time.",
+    "notFound": "Availability slot not found.",
+    "overlap": "This time slot overlaps with an existing availability.",
+    "invalidTime": "Invalid time format.",
+    "invalidTimezone": "Invalid timezone."
+  },
+  "appointments": {
+    "invalidDates": "Invalid appointment dates.",
+    "mustBeFuture": "Appointment must be scheduled in the future.",
+    "endBeforeStart": "Appointment end must be after its start.",
+    "durationTooLong": "Appointment duration cannot exceed 24 hours.",
+    "selfBooking": "A doctor cannot book an appointment with themselves.",
+    "doctorNotFound": "Doctor not found.",
+    "slotUnavailable": "This time slot is no longer available.",
+    "activeNotFound": "Active appointment not found.",
+    "invalidStatus": "Invalid appointment status.",
+    "onlyDoctorsCanUpdate": "Only doctors can update appointment status.",
+    "notFound": "Appointment not found.",
+    "invalidTransition": "This status change is not allowed.",
+    "unauthorized": "You do not have permission to modify this appointment.",
+    "slotNotInAvailability": "The selected time is not within the doctor's availability.",
+    "pastSlot": "Cannot book an appointment in the past.",
+    "slotBooked": "This slot has already been booked."
+  },
+  "validation": {
+    "nameLength": "Name must contain between 2 and 120 characters.",
+    "email": "A valid email is required.",
+    "passwordLength": "Password must contain between 8 and 128 characters.",
+    "accountType": "Invalid account type.",
+    "latitude": "Invalid latitude.",
+    "longitude": "Invalid longitude.",
+    "doctorSpecialization": "Specialization is required for doctors.",
+    "doctorAddress": "Address is required for doctors.",
+    "doctorPhone": "Phone is required for doctors.",
+    "doctorWorkingHours": "Working hours are required for doctors.",
+    "passwordRequired": "Password is required.",
+    "searchTooLong": "Search query is too long.",
+    "specializationTooLong": "Specialization is too long.",
+    "page": "Page must be a positive integer.",
+    "limit": "Limit must be between 1 and 50.",
+    "doctorRequired": "A valid doctor is required.",
+    "startDate": "A valid start date is required.",
+    "endDate": "A valid end date is required.",
+    "reasonTooLong": "Reason is too long.",
+    "appointmentRequired": "A valid appointment is required.",
+    "status": "Invalid appointment status.",
+    "dayOfWeek": "Day of week must be between 0 and 6.",
+    "startTime": "Start time must use HH:mm format.",
+    "endTime": "End time must use HH:mm format.",
+    "timezone": "Timezone is too long.",
+    "radius": "Search radius must be between 0.1 and 50 km.",
+    "sort": "Invalid sort option.",
+    "addressTooLong": "Address is too long.",
+    "workingHoursTooLong": "Working hours description is too long.",
+    "phoneTooLong": "Phone number is too long."
+  },
+  "errors": {
+    "internalServerError": "Something went wrong. Please try again later.",
+    "rateLimitExceeded": "Too many requests. Please try again later.",
+    "routeNotFound": "This route does not exist.",
+    "validationFailed": "The submitted data is invalid.",
+    "emailSendFailed": "Unable to send email. Please try again later."
+  }
+}

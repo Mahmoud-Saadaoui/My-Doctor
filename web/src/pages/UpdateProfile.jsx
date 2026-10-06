@@ -10,9 +10,11 @@ import Alert from "../components/Alert";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import LocationPicker from "../components/LocationPicker";
+import { useTranslation } from "react-i18next";
 
 const UpdateProfile = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [alert, setAlert] = useState({ visible: false, title: "", message: "", type: "alert" });
@@ -35,23 +37,23 @@ const UpdateProfile = () => {
   }, [fetchProfile]);
 
   const validationSchema = yup.object().shape({
-    name: yup.string().required("اسم المستخدم مطلوب"),
-    password: yup.string().min(8, "يجب أن تحتوي كلمة المرور على 8 محارف على الأقل"),
+    name: yup.string().required(t("validation.nameRequired")),
+    password: yup.string().min(8, t("validation.passwordMin")),
     specialization: yup.string().when("userType", {
       is: true,
-      then: (schema) => schema.required("يجب عليك ادخال التخصص"),
+      then: (schema) => schema.required(t("validation.specializationRequired")),
     }),
     address: yup.string().when("userType", {
       is: true,
-      then: (schema) => schema.required("يجب عليك تحديد العنوان من الخريطة"),
+      then: (schema) => schema.required(t("validation.addressRequired")),
     }),
     phone: yup.string().when("userType", {
       is: true,
-      then: (schema) => schema.required("يجب عليك إدخال رقم الهاتف"),
+      then: (schema) => schema.required(t("validation.phoneRequired")),
     }),
     workingHours: yup.string().when("userType", {
       is: true,
-      then: (schema) => schema.required("يجب عليك إدخال ساعات العمل"),
+      then: (schema) => schema.required(t("validation.workingHoursRequired")),
     }),
   });
 
@@ -77,15 +79,15 @@ const UpdateProfile = () => {
       await axios.put(UPDATE_PROFILE_URL, body);
       setAlert({
         visible: true,
-        title: "تم بنجاح!",
-        message: "تم تعديل حسابك بنجاح",
+        title: t("auth.updatedTitle"),
+        message: t("auth.updatedMessage"),
         type: "success",
       });
     } catch (e) {
       setAlert({
         visible: true,
-        title: "خطأ!",
-        message: e.response?.data?.errors?.[0]?.message || "حدث خطأ أثناء التحديث",
+        title: t("common.error"),
+        message: e.response?.data?.message || t("auth.updateError"),
         type: "alert",
       });
     } finally {
@@ -102,7 +104,7 @@ const UpdateProfile = () => {
         type={alert.type}
         onClose={() => setAlert({ ...alert, visible: false })}
       />
-      <Loader loading={loading} title="جاري تحديث البيانات" />
+      <Loader loading={loading} title={t("common.loading")} />
 
       {user && (
         <div className="mx-auto max-w-2xl px-4">
@@ -111,8 +113,8 @@ const UpdateProfile = () => {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-brand-deep shadow-lg">
               <Edit className="h-7 w-7" />
             </div>
-            <h1 className="text-2xl font-black text-brand-deep">تعديل البيانات الشخصية</h1>
-            <p className="mt-2 text-brand-deep/80">حدث معلوماتك الشخصية</p>
+            <h1 className="text-2xl font-black text-brand-deep">{t("auth.updateTitle")}</h1>
+            <p className="mt-2 text-brand-deep/80">{t("auth.updateSubtitle")}</p>
           </div>
 
           {/* Card */}
@@ -139,9 +141,9 @@ const UpdateProfile = () => {
                 {({ handleChange, handleBlur, values, errors, touched, isValid, setFieldValue }) => (
                   <Form className="space-y-5">
                     <Input
-                      label="الاسم الكامل"
+                      label={t("auth.fullName")}
                       name="name"
-                      placeholder="أدخل اسمك الكامل"
+                      placeholder={t("auth.namePlaceholder")}
                       value={values.name}
                       onChange={handleChange}
                       onBlur={handleBlur}
@@ -150,7 +152,7 @@ const UpdateProfile = () => {
                     />
 
                     <Input
-                      label="البريد الإلكتروني"
+                      label={t("auth.email")}
                       name="email"
                       type="email"
                       placeholder="example@email.com"
@@ -160,10 +162,10 @@ const UpdateProfile = () => {
                     />
 
                     <Input
-                      label="كلمة المرور الجديدة (اختياري)"
+                      label={t("auth.newPassword")}
                       name="password"
                       type="password"
-                      placeholder="اتركه فارغاً إذا لم تريد تغييره"
+                      placeholder={t("auth.newPasswordPlaceholder")}
                       value={values.password}
                       onChange={handleChange}
                       onBlur={handleBlur}
@@ -181,18 +183,18 @@ const UpdateProfile = () => {
                       />
                       <label htmlFor="userType" className="flex cursor-pointer items-center gap-2 text-brand-deep">
                         <Stethoscope className="h-5 w-5 text-brand" />
-                        <span className="font-semibold">نوع الحساب: {values.userType ? "طبيب" : "مستخدم عادي"}</span>
+                        <span className="font-semibold">{t("auth.accountType", { type: values.userType ? t("auth.doctor") : t("auth.normalUser") })}</span>
                       </label>
                     </div>
 
                     {values.userType && (
                         <div className="space-y-5 rounded-2xl border-2 border-brand/20 bg-cream/70 p-5">
-                        <p className="text-lg font-bold text-brand-deep">معلومات الطبيب</p>
+                        <p className="text-lg font-bold text-brand-deep">{t("auth.doctorInformation")}</p>
 
                         <Input
-                          label="التخصص"
+                          label={t("auth.specialization")}
                           name="specialization"
-                          placeholder="مثال: قلبية، عامة..."
+                          placeholder={t("auth.specializationPlaceholder")}
                           value={values.specialization}
                           onChange={handleChange}
                           onBlur={handleBlur}
@@ -201,9 +203,9 @@ const UpdateProfile = () => {
                         />
 
                         <Input
-                          label="ساعات العمل"
+                          label={t("auth.workingHours")}
                           name="workingHours"
-                          placeholder="مثال: 9 صباحاً - 5 مساءً"
+                          placeholder={t("auth.workingHoursPlaceholder")}
                           value={values.workingHours}
                           onChange={handleChange}
                           onBlur={handleBlur}
@@ -232,21 +234,21 @@ const UpdateProfile = () => {
                           onChange={handleChange}
                         />
                         {errors.address && touched.address && (
-                          <p className="text-right text-sm text-brand-deep">{errors.address}</p>
+                          <p className="text-start text-sm text-brand-deep">{errors.address}</p>
                         )}
 
                         {/* Display selected address */}
                         {values.address && (
                           <div className="rounded-xl bg-mist p-4">
-                            <p className="text-sm font-medium text-brand-deep">العنوان المحدد:</p>
+                            <p className="text-sm font-medium text-brand-deep">{t("auth.selectedAddress")}</p>
                             <p className="mt-1 text-sm text-brand">{values.address}</p>
                           </div>
                         )}
 
                         <Input
-                          label="رقم الهاتف"
+                          label={t("auth.phone")}
                           name="phone"
-                          placeholder="أدخل رقم الهاتف"
+                          placeholder={t("auth.phonePlaceholder")}
                           value={values.phone}
                           onChange={handleChange}
                           onBlur={handleBlur}
@@ -258,7 +260,7 @@ const UpdateProfile = () => {
 
                     <Button type="primary" fullWidth disabled={!isValid} className="mt-6">
                       <span className="flex items-center justify-center gap-2">
-                        حفظ التغييرات
+                        {t("auth.saveChanges")}
                         <ArrowLeft className="h-5 w-5" />
                       </span>
                     </Button>
@@ -272,7 +274,7 @@ const UpdateProfile = () => {
                   onClick={() => navigate("/profile")}
                   className="w-full rounded-2xl border-2 border-mist py-3.5 font-semibold text-brand-deep transition-colors hover:bg-cream"
                 >
-                  عودة إلى الملف الشخصي
+                  {t("auth.backToProfile")}
                 </button>
               </div>
             </div>

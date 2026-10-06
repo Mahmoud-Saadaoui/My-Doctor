@@ -1,33 +1,53 @@
-const jsonwebtoken = require('jsonwebtoken');
-const models = require('../models');
+import jsonwebtoken from 'jsonwebtoken';
+import prisma from '../config/db.js';
 
 const isLoggedIn = async (req, res, next) => {
   const authorization = req.headers.authorization || '';
   const [scheme, token] = authorization.split(' ');
 
   if (!token || !['Bearer', 'JWT'].includes(scheme)) {
-    return res.status(401).json({ message: 'Authentication is required' });
+    return res.status(401).json({
+      message: req.t('auth.authenticationRequired'),
+      messageKey: 'auth.authenticationRequired',
+      language: req.language,
+    });
   }
 
   try {
     const decoded = jsonwebtoken.verify(token, process.env.JWT_SECRET);
-    const user = await models.User.findByPk(decoded.sub || decoded.id, {
-      attributes: { exclude: ['password'] },
+    const user = await prisma.user.findUnique({
+      where: { id: Number(decoded.sub || decoded.id) },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        userType: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     if (!user) {
-      return res.status(401).json({ message: 'User account no longer exists' });
+      return res.status(401).json({
+        message: req.t('auth.accountNotFound'),
+        messageKey: 'auth.accountNotFound',
+        language: req.language,
+      });
     }
 
     req.currentUser = user;
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError' || error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ message: 'Invalid or expired authentication token' });
+      return res.status(401).json({
+        message: req.t('auth.invalidToken'),
+        messageKey: 'auth.invalidToken',
+        language: req.language,
+      });
     }
 
     next(error);
   }
 };
 
-module.exports = isLoggedIn;
+export default isLoggedIn;

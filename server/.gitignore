@@ -42,3 +42,8 @@ dist/
 build/
 test/
 migrations/
+
+# Prisma migrations are source-controlled.
+!prisma/
+!prisma/migrations/
+!prisma/migrations/**

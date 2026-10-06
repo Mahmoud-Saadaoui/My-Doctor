@@ -1,7 +1,9 @@
 import React from "react";
 import { AlertCircle, CheckCircle, HelpCircle, Trash2, LogOut, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const Alert = ({ visible, title, message, type = "alert", onClose, onClick }) => {
+  const { t } = useTranslation();
   if (!visible) return null;
 
   const icons = {
@@ -48,13 +50,13 @@ const Alert = ({ visible, title, message, type = "alert", onClose, onClick }) =>
                   type === "delete" ? "bg-brand-deep hover:bg-brand" : "bg-brand hover:bg-brand-deep"
                 }`}
               >
-                نعم
+                 {t("common.yes")}
               </button>
               <button
                 onClick={onClose}
                 className="rounded-xl border-2 border-brand/40 px-6 py-2.5 font-semibold text-brand-deep hover:bg-mist transition-colors"
               >
-                لا
+                 {t("common.no")}
               </button>
             </>
           ) : (
@@ -62,7 +64,7 @@ const Alert = ({ visible, title, message, type = "alert", onClose, onClick }) =>
               onClick={onClose}
               className="rounded-xl bg-brand-deep px-8 py-2.5 font-semibold text-white hover:bg-brand transition-colors"
             >
-              موافق
+               {t("common.ok")}
             </button>
           )}
         </div>

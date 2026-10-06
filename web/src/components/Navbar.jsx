@@ -2,11 +2,13 @@ import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Stethoscope, User, LogOut } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, logout } = useAuth();
+  const { t } = useTranslation();
 
   const isActive = (path) => location.pathname === path;
 
@@ -16,13 +18,13 @@ const Navbar = () => {
   };
 
   const navItems = [
-    { path: "/", label: "الرئيسية", icon: Home },
+    { path: "/", label: t("header.homeAria"), icon: Home },
   ];
 
   const authItems = isAuthenticated
     ? [
-        { path: "/doctors", label: "الأطباء", icon: Stethoscope },
-        { path: "/profile", label: "الملف الشخصي", icon: User },
+        { path: "/doctors", label: t("doctors.title"), icon: Stethoscope },
+        { path: "/profile", label: t("header.profile"), icon: User },
       ]
     : [];
 
@@ -33,7 +35,7 @@ const Navbar = () => {
           {/* Logo */}
             <Link to="/" className="hidden sm:flex items-center gap-2 font-black text-xl text-brand">
             <Stethoscope className="h-6 w-6" />
-            طبيبي
+            {t("header.brand")}
           </Link>
 
           {/* Nav Items */}
@@ -74,7 +76,7 @@ const Navbar = () => {
                 className="flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium text-brand-deep/80 transition-all hover:text-brand-deep hover:bg-cream sm:flex-row sm:px-4 sm:py-2"
               >
                 <LogOut className="h-5 w-5" />
-                <span className="text-xs sm:text-sm">خروج</span>
+                <span className="text-xs sm:text-sm">{t("header.logout")}</span>
               </button>
             )}
           </div>

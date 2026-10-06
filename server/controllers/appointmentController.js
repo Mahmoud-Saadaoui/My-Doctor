@@ -1,191 +1,306 @@
-const { Op, Transaction } = require('sequelize');
-const models = require('../models');
-const db = require('../models/database');
+import { Prisma } from '../prisma/generated/prisma/client.js';
+import prisma from '../config/db.js';
+import {
+  sendAppointmentRequestNotification,
+  sendAppointmentConfirmation,
+  sendAppointmentCancellation,
+  sendAppointmentRejection,
+} from '../services/emailService.js';
 
-const appointmentIncludes = [
-  {
-    model: models.User,
-    as: 'doctor',
-    attributes: { exclude: ['password'] },
-    include: [{ model: models.Profile, as: 'profile', attributes: ['specialization', 'address', 'phone'] }],
+const appointmentInclude = {
+  doctor: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      userType: true,
+      profile: {
+        select: {
+          specialization: true,
+          address: true,
+          phone: true,
+          latitude: true,
+          longitude: true,
+        },
+      },
+    },
   },
-  {
-    model: models.User,
-    as: 'patient',
-    attributes: ['id', 'name', 'email'],
+  patient: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
   },
-];
+};
 
 const parseAppointmentDates = (startsAt, endsAt) => {
   const start = new Date(startsAt);
   const end = new Date(endsAt);
 
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return { error: 'Invalid appointment dates' };
+    return { errorKey: 'appointments.invalidDates' };
   }
 
   if (start <= new Date()) {
-    return { error: 'Appointment must be scheduled in the future' };
+    return { errorKey: 'appointments.mustBeFuture' };
   }
 
   if (end <= start) {
-    return { error: 'Appointment end must be after its start' };
+    return { errorKey: 'appointments.endBeforeStart' };
   }
 
   if (end.getTime() - start.getTime() > 24 * 60 * 60 * 1000) {
-    return { error: 'Appointment duration cannot exceed 24 hours' };
+    return { errorKey: 'appointments.durationTooLong' };
   }
 
   return { start, end };
 };
 
-exports.index = async (req, res, next) => {
+export const index = async (req, res, next) => {
   try {
     const where = {
-      [Op.or]: [
+      OR: [
         { patientId: req.currentUser.id },
         { doctorId: req.currentUser.id },
       ],
+      ...(req.query.status ? { status: req.query.status } : {}),
     };
 
-    if (req.query.status) {
-      where.status = req.query.status;
-    }
-
-    const appointments = await models.Appointment.findAll({
+    const appointments = await prisma.appointment.findMany({
       where,
-      include: appointmentIncludes,
-      order: [['startsAt', 'DESC']],
+      include: appointmentInclude,
+      orderBy: { startsAt: 'desc' },
     });
 
-    res.status(200).json(appointments);
+    return res.status(200).json(appointments);
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
-exports.create = async (req, res, next) => {
-  const { doctorId, startsAt, endsAt, reason } = req.body;
+export const create = async (req, res, next) => {
+  const { doctorId: rawDoctorId, startsAt, endsAt, reason } = req.body;
+  const doctorId = Number(rawDoctorId);
   const dates = parseAppointmentDates(startsAt, endsAt);
 
-  if (dates.error) {
-    return res.status(400).json({ message: dates.error });
+  if (dates.errorKey) {
+    return res.status(400).json({
+      message: req.t(dates.errorKey),
+      messageKey: dates.errorKey,
+    });
   }
 
-  if (Number(doctorId) === Number(req.currentUser.id)) {
-    return res.status(400).json({ message: 'A doctor cannot book an appointment with themselves' });
+  if (doctorId === Number(req.currentUser.id)) {
+    return res.status(400).json({
+      message: req.t('appointments.selfBooking'),
+      messageKey: 'appointments.selfBooking',
+    });
   }
-
-  let transaction;
 
   try {
-    transaction = await db.transaction({
-      isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE,
-    });
-    const doctor = await models.User.findOne({
-      where: { id: doctorId, userType: 'doctor' },
-      transaction,
-      lock: transaction.LOCK.UPDATE,
+    const result = await prisma.$transaction(async tx => {
+      const lockedDoctor = await tx.$queryRaw`
+        SELECT "id"
+        FROM "users"
+        WHERE "id" = ${doctorId}
+          AND "userType" = 'doctor'::"UserType"
+        FOR UPDATE
+      `;
+
+      if (lockedDoctor.length === 0) {
+        return { type: 'doctor-not-found' };
+      }
+
+      const conflict = await tx.appointment.findFirst({
+        where: {
+          doctorId,
+          status: { notIn: ['cancelled', 'no_show'] },
+          startsAt: { lt: dates.end },
+          endsAt: { gt: dates.start },
+        },
+      });
+
+      if (conflict) {
+        return { type: 'conflict' };
+      }
+
+      const appointment = await tx.appointment.create({
+        data: {
+          patientId: req.currentUser.id,
+          doctorId,
+          startsAt: dates.start,
+          endsAt: dates.end,
+          reason,
+          status: 'pending',
+        },
+      });
+
+      return { type: 'created', id: appointment.id };
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
     });
 
-    if (!doctor) {
-      await transaction.rollback();
-      return res.status(404).json({ message: 'Doctor not found' });
+    if (result.type === 'doctor-not-found') {
+      return res.status(404).json({
+        message: req.t('appointments.doctorNotFound'),
+        messageKey: 'appointments.doctorNotFound',
+      });
     }
 
-    const conflict = await models.Appointment.findOne({
-      where: {
-        doctorId,
-        status: { [Op.notIn]: ['cancelled', 'no_show'] },
-        startsAt: { [Op.lt]: dates.end },
-        endsAt: { [Op.gt]: dates.start },
-      },
-      transaction,
-      lock: transaction.LOCK.UPDATE,
-    });
-
-    if (conflict) {
-      await transaction.rollback();
-      return res.status(409).json({ message: 'This time slot is no longer available' });
+    if (result.type === 'conflict') {
+      return res.status(409).json({
+        message: req.t('appointments.slotUnavailable'),
+        messageKey: 'appointments.slotUnavailable',
+      });
     }
 
-    const appointment = await models.Appointment.create({
-      patientId: req.currentUser.id,
-      doctorId,
-      startsAt: dates.start,
-      endsAt: dates.end,
-      reason,
-      status: 'pending',
-    }, { transaction });
-
-    await transaction.commit();
-
-    const createdAppointment = await models.Appointment.findByPk(appointment.id, {
-      include: appointmentIncludes,
+    const createdAppointment = await prisma.appointment.findUnique({
+      where: { id: result.id },
+      include: appointmentInclude,
     });
 
-    res.status(201).json(createdAppointment);
+    // Send notification emails (non-blocking)
+    const doctor = createdAppointment.doctor;
+    const patient = createdAppointment.patient;
+    sendAppointmentRequestNotification(doctor.email, patient.name, {
+      date: createdAppointment.startsAt,
+      reason: createdAppointment.reason,
+    }).catch(err => console.error('Failed to send appointment request notification:', err));
+
+    return res.status(201).json(createdAppointment);
   } catch (error) {
-    if (transaction) await transaction.rollback();
-    next(error);
+    if (error.code === 'P2034') {
+      return res.status(409).json({
+        message: req.t('appointments.slotUnavailable'),
+        messageKey: 'appointments.slotUnavailable',
+      });
+    }
+
+    return next(error);
   }
 };
 
-exports.cancel = async (req, res, next) => {
+export const cancel = async (req, res, next) => {
   try {
-    const appointment = await models.Appointment.findOne({
+    const appointment = await prisma.appointment.findFirst({
       where: {
-        id: req.params.id,
-        [Op.or]: [
+        id: Number(req.params.id),
+        OR: [
           { patientId: req.currentUser.id },
           { doctorId: req.currentUser.id },
         ],
-        status: { [Op.notIn]: ['cancelled', 'completed', 'no_show'] },
+        status: { notIn: ['cancelled', 'completed', 'no_show'] },
       },
     });
 
     if (!appointment) {
-      return res.status(404).json({ message: 'Active appointment not found' });
+      return res.status(404).json({
+        message: req.t('appointments.activeNotFound'),
+        messageKey: 'appointments.activeNotFound',
+      });
     }
 
-    await appointment.update({
-      status: 'cancelled',
-      cancellationReason: req.body.reason || null,
+    const updatedAppointment = await prisma.appointment.update({
+      where: { id: appointment.id },
+      data: {
+        status: 'cancelled',
+        cancellationReason: req.body.reason || null,
+      },
+      include: appointmentInclude,
     });
 
-    res.status(200).json(appointment);
+    // Send cancellation notification to the other party
+    const cancelledBy = req.currentUser.userType === 'doctor' ? 'the doctor' : 'the patient';
+    const recipientEmail = req.currentUser.userType === 'doctor'
+      ? updatedAppointment.patient.email
+      : updatedAppointment.doctor.email;
+
+    sendAppointmentCancellation(recipientEmail, {
+      date: updatedAppointment.startsAt,
+      reason: updatedAppointment.cancellationReason,
+    }, cancelledBy).catch(err => console.error('Failed to send cancellation notification:', err));
+
+    return res.status(200).json(updatedAppointment);
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
-exports.updateStatus = async (req, res, next) => {
-  const allowedStatuses = ['confirmed', 'completed', 'no_show', 'cancelled'];
+/**
+ * Appointment status transition matrix.
+ * Defines which status changes are allowed from each status.
+ */
+const STATUS_TRANSITIONS = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['completed', 'no_show', 'cancelled'],
+  cancelled: [],
+  completed: [],
+  no_show: [],
+};
 
-  if (!allowedStatuses.includes(req.body.status)) {
-    return res.status(400).json({ message: 'Invalid appointment status' });
+export const updateStatus = async (req, res, next) => {
+  const { status: newStatus } = req.body;
+
+  if (!['pending', 'confirmed', 'cancelled', 'completed', 'no_show'].includes(newStatus)) {
+    return res.status(400).json({
+      message: req.t('appointments.invalidStatus'),
+      messageKey: 'appointments.invalidStatus',
+    });
   }
 
   if (req.currentUser.userType !== 'doctor') {
-    return res.status(403).json({ message: 'Only doctors can update appointment status' });
+    return res.status(403).json({
+      message: req.t('appointments.onlyDoctorsCanUpdate'),
+      messageKey: 'appointments.onlyDoctorsCanUpdate',
+    });
   }
 
   try {
-    const appointment = await models.Appointment.findOne({
-      where: { id: req.params.id, doctorId: req.currentUser.id },
+    const appointment = await prisma.appointment.findFirst({
+      where: { id: Number(req.params.id), doctorId: req.currentUser.id },
     });
 
     if (!appointment) {
-      return res.status(404).json({ message: 'Appointment not found' });
+      return res.status(404).json({
+        message: req.t('appointments.notFound'),
+        messageKey: 'appointments.notFound',
+      });
     }
 
-    await appointment.update({
-      status: req.body.status,
-      cancellationReason: req.body.status === 'cancelled' ? req.body.reason || null : null,
+    // Check if the transition is allowed
+    const allowedTransitions = STATUS_TRANSITIONS[appointment.status] || [];
+    if (!allowedTransitions.includes(newStatus)) {
+      return res.status(400).json({
+        message: req.t('appointments.invalidTransition'),
+        messageKey: 'appointments.invalidTransition',
+      });
+    }
+
+    const updatedAppointment = await prisma.appointment.update({
+      where: { id: appointment.id },
+      data: {
+        status: newStatus,
+        cancellationReason: newStatus === 'cancelled' ? req.body.reason || null : null,
+      },
+      include: appointmentInclude,
     });
 
-    res.status(200).json(appointment);
+    // Send notification emails based on status change
+    if (newStatus === 'confirmed') {
+      sendAppointmentConfirmation(updatedAppointment.patient.email, req.currentUser.name, {
+        date: updatedAppointment.startsAt,
+        reason: updatedAppointment.reason,
+      }).catch(err => console.error('Failed to send confirmation notification:', err));
+    } else if (newStatus === 'cancelled') {
+      sendAppointmentCancellation(updatedAppointment.patient.email, {
+        date: updatedAppointment.startsAt,
+        reason: updatedAppointment.cancellationReason,
+      }, 'the doctor').catch(err => console.error('Failed to send cancellation notification:', err));
+    }
+
+    return res.status(200).json(updatedAppointment);
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
